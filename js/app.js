@@ -9,6 +9,7 @@ import {
   buildDatabase,
   getPreferredClasses,
   getPreferredNpcLevel,
+  getPreferredRaces,
   getPreferredStats,
   isApproved,
   naturalCompare
@@ -17,6 +18,7 @@ import {
 import {
   createFilterOptions,
   filterRecords,
+  getRecordStats,
   getZoneSummary
 } from "./filters.js";
 
@@ -24,7 +26,9 @@ const state = {
   manifest: null,
   records: [],
   filteredRecords: [],
-  diagnostics: null
+  diagnostics: null,
+  selectedStats: new Set(),
+  recordsById: new Map()
 };
 
 const elements = {};
@@ -50,9 +54,18 @@ async function initialize() {
     state.records = database.records;
     state.diagnostics = database.diagnostics;
 
-    populateFilters(
-      createFilterOptions(state.records)
+    state.recordsById = new Map(
+      state.records.map(record => [
+        record.record_id,
+        record
+      ])
     );
+
+    const filterOptions =
+      createFilterOptions(state.records);
+
+    populateFilters(filterOptions);
+    renderStatOptions(filterOptions.stats);
 
     applyCurrentFilters();
     renderDiagnostics();
@@ -118,6 +131,15 @@ function captureElements() {
   elements.approvedOnly =
     document.querySelector("#approved-filter");
 
+  elements.statMode =
+    document.querySelector("#stat-mode-filter");
+
+  elements.statOptions =
+    document.querySelector("#stat-options");
+
+  elements.clearStatsButton =
+    document.querySelector("#clear-stat-filters");
+
   elements.resetButton =
     document.querySelector("#reset-filters");
 
@@ -129,6 +151,21 @@ function captureElements() {
 
   elements.diagnostics =
     document.querySelector("#diagnostics");
+
+  elements.itemDialog =
+    document.querySelector("#item-dialog");
+
+  elements.closeItemDialog =
+    document.querySelector("#close-item-dialog");
+
+  elements.detailItemName =
+    document.querySelector("#detail-item-name");
+
+  elements.detailItemSubtitle =
+    document.querySelector("#detail-item-subtitle");
+
+  elements.itemDetailContent =
+    document.querySelector("#item-detail-content");
 }
 
 function validateRequiredElements() {
@@ -154,7 +191,8 @@ function bindEvents() {
     elements.className,
     elements.verification,
     elements.confidence,
-    elements.approvedOnly
+    elements.approvedOnly,
+    elements.statMode
   ];
 
   for (const control of controls) {
@@ -172,6 +210,31 @@ function bindEvents() {
   elements.resetButton.addEventListener(
     "click",
     resetFilters
+  );
+
+  elements.clearStatsButton.addEventListener(
+    "click",
+    clearStatFilters
+  );
+
+  elements.statOptions.addEventListener(
+    "change",
+    handleStatSelection
+  );
+
+  elements.resultsBody.addEventListener(
+    "click",
+    handleResultClick
+  );
+
+  elements.closeItemDialog.addEventListener(
+    "click",
+    closeItemDetails
+  );
+
+  elements.itemDialog.addEventListener(
+    "click",
+    handleDialogBackdropClick
   );
 }
 
@@ -239,6 +302,71 @@ function populateSelect(select, values, defaultLabel) {
   }
 }
 
+function renderStatOptions(stats) {
+  elements.statOptions.replaceChildren();
+
+  if (stats.length === 0) {
+    const message = document.createElement("p");
+
+    message.className = "muted-message";
+    message.textContent =
+      "No recognized stat values were found in the database.";
+
+    elements.statOptions.append(message);
+    return;
+  }
+
+  for (const stat of stats) {
+    const label = document.createElement("label");
+    const checkbox = document.createElement("input");
+    const text = document.createElement("span");
+
+    label.className = "stat-option";
+
+    checkbox.type = "checkbox";
+    checkbox.value = stat;
+    checkbox.dataset.statFilter = "true";
+
+    text.textContent = stat;
+
+    label.append(checkbox, text);
+    elements.statOptions.append(label);
+  }
+}
+
+function handleStatSelection(event) {
+  const checkbox = event.target.closest(
+    'input[data-stat-filter="true"]'
+  );
+
+  if (!checkbox) {
+    return;
+  }
+
+  if (checkbox.checked) {
+    state.selectedStats.add(checkbox.value);
+  } else {
+    state.selectedStats.delete(checkbox.value);
+  }
+
+  applyCurrentFilters();
+}
+
+function clearStatFilters() {
+  state.selectedStats.clear();
+
+  const checkboxes =
+    elements.statOptions.querySelectorAll(
+      'input[data-stat-filter="true"]'
+    );
+
+  for (const checkbox of checkboxes) {
+    checkbox.checked = false;
+  }
+
+  applyCurrentFilters();
+}
+
 function applyCurrentFilters() {
   const filters = {
     search: elements.search.value,
@@ -249,7 +377,9 @@ function applyCurrentFilters() {
     className: elements.className.value,
     verification: elements.verification.value,
     confidence: elements.confidence.value,
-    approvedOnly: elements.approvedOnly.checked
+    approvedOnly: elements.approvedOnly.checked,
+    stats: [...state.selectedStats],
+    statMode: elements.statMode.value
   };
 
   state.filteredRecords = filterRecords(
@@ -289,7 +419,19 @@ function renderResults() {
   for (const record of displayedRecords) {
     const row = document.createElement("tr");
 
-    appendCell(row, record.item_name, "item-name");
+    const itemCell = document.createElement("td");
+    const itemButton = document.createElement("button");
+
+    itemButton.type = "button";
+    itemButton.className = "item-link-button";
+    itemButton.dataset.recordId = record.record_id;
+    itemButton.textContent =
+      record.item_name || "Unnamed item";
+
+    itemCell.className = "item-name";
+    itemCell.append(itemButton);
+    row.append(itemCell);
+
     appendCell(row, record.slot);
     appendCell(row, record.zone);
     appendCell(row, record.source_npc);
@@ -344,6 +486,234 @@ function renderZoneSummary() {
 
     row.append(cell);
     elements.zoneSummaryBody.append(row);
+  }
+}
+
+function handleResultClick(event) {
+  const button = event.target.closest(
+    "button[data-record-id]"
+  );
+
+  if (!button) {
+    return;
+  }
+
+  const record =
+    state.recordsById.get(button.dataset.recordId);
+
+  if (!record) {
+    return;
+  }
+
+  openItemDetails(record);
+}
+
+function openItemDetails(record) {
+  elements.detailItemName.textContent =
+    record.item_name || "Unnamed item";
+
+  elements.detailItemSubtitle.textContent = [
+    record.item_category,
+    record.slot,
+    record.zone
+  ]
+    .filter(Boolean)
+    .join(" • ");
+
+  elements.itemDetailContent.replaceChildren();
+
+  appendDetailSection(
+    "Item identity",
+    [
+      ["Record ID", record.record_id],
+      ["Batch", record.batch],
+      ["Continent", record.continent],
+      ["Zone", record.zone],
+      ["Category", record.item_category],
+      ["Slot", record.slot],
+      ["Equippable", record.equippable],
+      ["Inventory only", record.inventory_only],
+      ["Magic", record.magic],
+      ["Lore", record.lore],
+      ["No Drop", record.no_drop],
+      ["Quest item", record.quest_item],
+      ["Size", record.size],
+      ["Weight", record.weight]
+    ]
+  );
+
+  appendDetailSection(
+    "EQL item data",
+    [
+      ["EQL stats", record.stats_eql],
+      ["Recognized stats", getRecordStats(record).join(", ")],
+      ["EQL classes", record.classes_eql],
+      ["EQL races", record.races_eql],
+      ["Damage", record.damage],
+      ["Delay", record.delay],
+      ["Weapon skill", record.weapon_skill],
+      ["Proc / click / focus", record.proc_click_focus],
+      ["Effect", record.effect_name],
+      ["Effect description", record.effect_description]
+    ]
+  );
+
+  appendDetailSection(
+    "Classic comparison",
+    [
+      ["Classic stats", record.stats_classic],
+      ["Classic classes", record.classes_classic],
+      ["Classic races", record.races_classic],
+      ["EQL stats match", record.eql_stats_match],
+      ["EQL classes match", record.eql_classes_match],
+      ["EQL races match", record.eql_races_match],
+      ["EQL effect match", record.eql_effect_match],
+      ["EQL changes", record.eql_changes_summary]
+    ]
+  );
+
+  appendDetailSection(
+    "Drop source",
+    [
+      ["Source NPC", record.source_npc],
+      ["EQL NPC level", record.source_npc_level_eql],
+      ["Classic NPC level", record.source_npc_level_classic],
+      ["NPC class", record.source_npc_class],
+      ["NPC race/type", record.source_npc_race_type],
+      ["Spawn location", record.spawn_location],
+      ["Spawn type", record.spawn_type],
+      ["Placeholder", record.placeholder],
+      ["Placeholder levels", record.placeholder_level_range],
+      ["Nearby enemy levels", record.nearby_enemy_level_range],
+      ["Respawn timer", record.respawn_timer],
+      ["Drop frequency", record.drop_frequency],
+      ["Reported drop rate", record.reported_drop_rate],
+      ["Time condition", record.time_condition],
+      ["Special abilities", record.special_abilities],
+      ["Social/add risk", record.social_add_risk],
+      ["Faction consequences", record.faction_consequences],
+      ["Drop notes", record.drop_notes]
+    ]
+  );
+
+  appendDetailSection(
+    "Recommended use",
+    [
+      ["Best for classes", record.best_for_classes],
+      ["Best for archetypes", record.best_for_archetypes],
+      ["Target priority", record.target_priority],
+      ["General value", record.general_value_notes],
+      ["Personal build notes", record.personal_build_notes]
+    ]
+  );
+
+  appendDetailSection(
+    "EQL audit status",
+    [
+      ["Verification status", record.eql_verification_status],
+      ["Data confidence", record.data_confidence],
+      ["Audit action", record.eql_audit_action],
+      ["EQL item confirmed", record.eql_item_confirmed],
+      ["EQL NPC confirmed", record.eql_npc_confirmed],
+      ["Drop source confirmed", record.eql_drop_source_confirmed],
+      ["Spawn confirmed", record.eql_spawn_match],
+      ["Verification notes", record.eql_verification_notes],
+      ["Last checked", record.last_checked],
+      ["Approved", record.approved],
+      ["Revision", record.revision],
+      ["Source file", record.__sourceFile]
+    ]
+  );
+
+  appendSourceSection(record);
+
+  elements.itemDialog.showModal();
+}
+
+function appendDetailSection(title, fields) {
+  const populatedFields = fields.filter(
+    ([, value]) =>
+      value !== null &&
+      value !== undefined &&
+      String(value).trim() !== ""
+  );
+
+  if (populatedFields.length === 0) {
+    return;
+  }
+
+  const section = document.createElement("section");
+  const heading = document.createElement("h3");
+  const grid = document.createElement("dl");
+
+  section.className = "detail-section";
+  heading.textContent = title;
+  grid.className = "detail-grid";
+
+  for (const [label, value] of populatedFields) {
+    const item = document.createElement("div");
+    const term = document.createElement("dt");
+    const description = document.createElement("dd");
+
+    term.textContent = label;
+    description.textContent = value;
+
+    item.append(term, description);
+    grid.append(item);
+  }
+
+  section.append(heading, grid);
+  elements.itemDetailContent.append(section);
+}
+
+function appendSourceSection(record) {
+  const sourceFields = [
+    ["EQL source", record.eql_source_url],
+    ["EQL Wiki", record.eql_wiki_url],
+    ["Classic source", record.classic_source_url],
+    ["Project 1999", record.project1999_url],
+    ["Item source", record.item_url],
+    ["NPC source", record.npc_url]
+  ];
+
+  const validSources = sourceFields.filter(
+    ([, value]) => isSafeHttpUrl(value)
+  );
+
+  if (validSources.length === 0) {
+    return;
+  }
+
+  const section = document.createElement("section");
+  const heading = document.createElement("h3");
+  const links = document.createElement("div");
+
+  section.className = "detail-section";
+  links.className = "source-links";
+  heading.textContent = "Sources";
+
+  for (const [label, value] of validSources) {
+    const link = document.createElement("a");
+
+    link.href = value;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = label;
+
+    links.append(link);
+  }
+
+  section.append(heading, links);
+  elements.itemDetailContent.append(section);
+}
+
+function closeItemDetails() {
+  elements.itemDialog.close();
+}
+
+function handleDialogBackdropClick(event) {
+  if (event.target === elements.itemDialog) {
+    closeItemDetails();
   }
 }
 
@@ -462,8 +832,9 @@ function resetFilters() {
   elements.verification.value = "";
   elements.confidence.value = "";
   elements.approvedOnly.checked = true;
+  elements.statMode.value = "all";
 
-  applyCurrentFilters();
+  clearStatFilters();
 }
 
 function updateStatus(message, statusType = "") {
@@ -482,4 +853,21 @@ function displayFallbackError(message) {
   errorBox.textContent = message;
 
   document.body.prepend(errorBox);
+}
+
+function isSafeHttpUrl(value) {
+  if (!value) {
+    return false;
+  }
+
+  try {
+    const url = new URL(value);
+
+    return (
+      url.protocol === "http:" ||
+      url.protocol === "https:"
+    );
+  } catch {
+    return false;
+  }
 }
