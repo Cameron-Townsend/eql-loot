@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>EverQuest Legends Loot Explorer</title>
+
+  <link rel="stylesheet" href="./css/app.css">
+</head>
+
+<body>
+  <main>
+    <h1>EverQuest Legends Loot Explorer</h1>
+
+    <p>
+      GitHub Pages deployment and CSV discovery test
+    </p>
+
+    <section>
+      <h2>Database Status</h2>
+
+      <p id="status">
+        Loading manifest…
+      </p>
+
+      <dl>
+        <div>
+          <dt>CSV files discovered</dt>
+          <dd id="file-count">—</dd>
+        </div>
+
+        <div>
+          <dt>Declared records</dt>
+          <dd id="record-count">—</dd>
+        </div>
+
+        <div>
+          <dt>Manifest generated</dt>
+          <dd id="generated-at">—</dd>
+        </div>
+      </dl>
+
+      <h2>Discovered CSV Files</h2>
+
+      <ul id="file-list">
+        <li>Waiting for manifest…</li>
+      </ul>
+    </section>
+  </main>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
