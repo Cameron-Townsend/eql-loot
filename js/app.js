@@ -32,10 +32,11 @@ const elements = {};
 document.addEventListener("DOMContentLoaded", initialize);
 
 async function initialize() {
-  captureElements();
-  bindEvents();
-
   try {
+    captureElements();
+    validateRequiredElements();
+    bindEvents();
+
     updateStatus("Loading CSV database…");
 
     state.manifest = await loadManifest();
@@ -63,15 +64,20 @@ async function initialize() {
   } catch (error) {
     console.error(error);
 
-    updateStatus(
-      `Database failed to load: ${error.message}`,
-      "error"
-    );
+    const message =
+      `Database could not be loaded: ${error.message}`;
+
+    if (elements.status) {
+      updateStatus(message, "error");
+    } else {
+      displayFallbackError(message);
+    }
   }
 }
 
 function captureElements() {
-  elements.status = document.querySelector("#status");
+  elements.status =
+    document.querySelector("#status");
 
   elements.fileCount =
     document.querySelector("#file-count");
@@ -123,6 +129,19 @@ function captureElements() {
 
   elements.diagnostics =
     document.querySelector("#diagnostics");
+}
+
+function validateRequiredElements() {
+  const missingElements = Object.entries(elements)
+    .filter(([, element]) => element === null)
+    .map(([name]) => name);
+
+  if (missingElements.length > 0) {
+    throw new Error(
+      `Page is missing required elements: ` +
+      missingElements.join(", ")
+    );
+  }
 }
 
 function bindEvents() {
@@ -263,6 +282,7 @@ function renderResults() {
   elements.resultsBody.replaceChildren();
 
   const maximumRows = 500;
+
   const displayedRecords =
     state.filteredRecords.slice(0, maximumRows);
 
@@ -347,16 +367,16 @@ function updateCounts() {
   );
 
   elements.fileCount.textContent =
-    state.manifest?.fileCount ?? 0;
+    String(state.manifest?.fileCount ?? 0);
 
   elements.recordCount.textContent =
-    state.records.length;
+    String(state.records.length);
 
   elements.matchCount.textContent =
-    state.filteredRecords.length;
+    String(state.filteredRecords.length);
 
   elements.zoneCount.textContent =
-    zones.size;
+    String(zones.size);
 }
 
 function renderDiagnostics() {
@@ -453,4 +473,13 @@ function updateStatus(message, statusType = "") {
   if (statusType) {
     elements.status.classList.add(statusType);
   }
+}
+
+function displayFallbackError(message) {
+  const errorBox = document.createElement("p");
+
+  errorBox.className = "fallback-error";
+  errorBox.textContent = message;
+
+  document.body.prepend(errorBox);
 }
