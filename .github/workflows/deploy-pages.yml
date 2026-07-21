@@ -1,1 +1,122 @@
+name: Deploy EQL Loot Explorer
 
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Generate CSV manifest
+        shell: python
+        run: |
+          import csv
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          root = Path(".")
+          csv_directory = root / "data" / "csv"
+          manifest_path = root / "data" / "manifest.json"
+
+          csv_files = sorted(
+              csv_directory.rglob("*.csv"),
+              key=lambda path: path.as_posix().lower()
+          )
+
+          manifest_entries = []
+
+          for csv_path in csv_files:
+              with csv_path.open(
+                  "r",
+                  encoding="utf-8-sig",
+                  newline=""
+              ) as csv_file:
+                  reader = csv.reader(csv_file)
+                  headers = next(reader, [])
+
+                  record_count = sum(
+                      1
+                      for row in reader
+                      if any(cell.strip() for cell in row)
+                  )
+
+              manifest_entries.append({
+                  "path": csv_path.as_posix(),
+                  "filename": csv_path.name,
+                  "recordCount": record_count,
+                  "headers": [
+                      header.strip()
+                      for header in headers
+                  ],
+                  "sizeBytes": csv_path.stat().st_size
+              })
+
+          manifest = {
+              "schemaVersion": 1,
+              "generatedAt": datetime.now(
+                  timezone.utc
+              ).isoformat(),
+              "fileCount": len(manifest_entries),
+              "totalDeclaredRecords": sum(
+                  entry["recordCount"]
+                  for entry in manifest_entries
+              ),
+              "files": manifest_entries
+          }
+
+          manifest_path.parent.mkdir(
+              parents=True,
+              exist_ok=True
+          )
+
+          manifest_path.write_text(
+              json.dumps(manifest, indent=2) + "\n",
+              encoding="utf-8"
+          )
+
+          print(
+              f"Generated manifest with "
+              f"{len(manifest_entries)} CSV files."
+          )
+
+      - name: Disable Jekyll processing
+        run: touch .nojekyll
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
