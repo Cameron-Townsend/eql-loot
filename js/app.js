@@ -509,6 +509,18 @@ function handleResultClick(event) {
 }
 
 function openItemDetails(record) {
+  const preferredStats =
+    getPreferredStats(record) || "No stats listed";
+
+  const preferredClasses =
+    getPreferredClasses(record) || "Not listed";
+
+  const preferredRaces =
+    getPreferredRaces(record) || "Not listed";
+
+  const preferredNpcLevel =
+    getPreferredNpcLevel(record) || "Unknown";
+
   elements.detailItemName.textContent =
     record.item_name || "Unnamed item";
 
@@ -522,15 +534,117 @@ function openItemDetails(record) {
 
   elements.itemDetailContent.replaceChildren();
 
-  appendDetailSection(
-    "Item identity",
+  const summaryCard = document.createElement("section");
+  summaryCard.className = "quick-detail-card";
+
+  appendQuickField(
+    summaryCard,
+    "Stats",
+    preferredStats,
+    "quick-field-wide"
+  );
+
+  appendQuickField(
+    summaryCard,
+    "Classes",
+    preferredClasses
+  );
+
+  appendQuickField(
+    summaryCard,
+    "Races",
+    preferredRaces
+  );
+
+  appendQuickField(
+    summaryCard,
+    "Zone",
+    record.zone
+  );
+
+  appendQuickField(
+    summaryCard,
+    "Dropped by",
+    record.source_npc
+  );
+
+  appendQuickField(
+    summaryCard,
+    "NPC level",
+    preferredNpcLevel
+  );
+
+  appendQuickField(
+    summaryCard,
+    "Drop frequency",
+    firstPopulatedValue(
+      record.drop_frequency,
+      record.reported_drop_rate
+    )
+  );
+
+  appendQuickField(
+    summaryCard,
+    "Respawn",
+    record.respawn_timer
+  );
+
+  appendQuickField(
+    summaryCard,
+    "Effect",
+    firstPopulatedValue(
+      record.proc_click_focus,
+      record.effect_name,
+      record.effect_description
+    ),
+    "quick-field-wide"
+  );
+
+  appendQuickField(
+    summaryCard,
+    "Verification",
+    combineValues(
+      record.eql_verification_status,
+      record.data_confidence
+    ),
+    "quick-field-wide"
+  );
+
+  elements.itemDetailContent.append(summaryCard);
+
+  const detailsDrawer = document.createElement("details");
+  detailsDrawer.className = "advanced-detail-drawer";
+
+  const drawerSummary = document.createElement("summary");
+  const drawerLabel = document.createElement("span");
+  const drawerHint = document.createElement("span");
+
+  drawerLabel.className = "drawer-label";
+  drawerLabel.textContent = "More details";
+
+  drawerHint.className = "drawer-hint";
+  drawerHint.textContent =
+    "Classic comparison, spawn information, notes, audit data, and sources";
+
+  drawerSummary.append(drawerLabel, drawerHint);
+  detailsDrawer.append(drawerSummary);
+
+  const drawerContent = document.createElement("div");
+  drawerContent.className = "advanced-detail-content";
+
+  detailsDrawer.append(drawerContent);
+  elements.itemDetailContent.append(detailsDrawer);
+
+  appendDetailSectionTo(
+    drawerContent,
+    "Item information",
     [
       ["Record ID", record.record_id],
       ["Batch", record.batch],
       ["Continent", record.continent],
-      ["Zone", record.zone],
       ["Category", record.item_category],
       ["Slot", record.slot],
+      ["Recognized stats", getRecordStats(record).join(", ")],
       ["Equippable", record.equippable],
       ["Inventory only", record.inventory_only],
       ["Magic", record.magic],
@@ -538,27 +652,28 @@ function openItemDetails(record) {
       ["No Drop", record.no_drop],
       ["Quest item", record.quest_item],
       ["Size", record.size],
-      ["Weight", record.weight]
+      ["Weight", record.weight],
+      ["Damage", record.damage],
+      ["Delay", record.delay],
+      ["Weapon skill", record.weapon_skill]
     ]
   );
 
-  appendDetailSection(
+  appendDetailSectionTo(
+    drawerContent,
     "EQL item data",
     [
       ["EQL stats", record.stats_eql],
-      ["Recognized stats", getRecordStats(record).join(", ")],
       ["EQL classes", record.classes_eql],
       ["EQL races", record.races_eql],
-      ["Damage", record.damage],
-      ["Delay", record.delay],
-      ["Weapon skill", record.weapon_skill],
       ["Proc / click / focus", record.proc_click_focus],
-      ["Effect", record.effect_name],
+      ["Effect name", record.effect_name],
       ["Effect description", record.effect_description]
     ]
   );
 
-  appendDetailSection(
+  appendDetailSectionTo(
+    drawerContent,
     "Classic comparison",
     [
       ["Classic stats", record.stats_classic],
@@ -572,10 +687,10 @@ function openItemDetails(record) {
     ]
   );
 
-  appendDetailSection(
-    "Drop source",
+  appendDetailSectionTo(
+    drawerContent,
+    "Spawn and drop details",
     [
-      ["Source NPC", record.source_npc],
       ["EQL NPC level", record.source_npc_level_eql],
       ["Classic NPC level", record.source_npc_level_classic],
       ["NPC class", record.source_npc_class],
@@ -596,7 +711,8 @@ function openItemDetails(record) {
     ]
   );
 
-  appendDetailSection(
+  appendDetailSectionTo(
+    drawerContent,
     "Recommended use",
     [
       ["Best for classes", record.best_for_classes],
@@ -607,15 +723,19 @@ function openItemDetails(record) {
     ]
   );
 
-  appendDetailSection(
-    "EQL audit status",
+  appendDetailSectionTo(
+    drawerContent,
+    "Audit information",
     [
       ["Verification status", record.eql_verification_status],
       ["Data confidence", record.data_confidence],
       ["Audit action", record.eql_audit_action],
       ["EQL item confirmed", record.eql_item_confirmed],
       ["EQL NPC confirmed", record.eql_npc_confirmed],
-      ["Drop source confirmed", record.eql_drop_source_confirmed],
+      [
+        "Drop source confirmed",
+        record.eql_drop_source_confirmed
+      ],
       ["Spawn confirmed", record.eql_spawn_match],
       ["Verification notes", record.eql_verification_notes],
       ["Last checked", record.last_checked],
@@ -625,17 +745,45 @@ function openItemDetails(record) {
     ]
   );
 
-  appendSourceSection(record);
+  appendSourceSectionTo(drawerContent, record);
 
   elements.itemDialog.showModal();
 }
 
-function appendDetailSection(title, fields) {
+function appendQuickField(
+  container,
+  label,
+  value,
+  className = ""
+) {
+  if (!hasValue(value)) {
+    return;
+  }
+
+  const field = document.createElement("div");
+  const term = document.createElement("span");
+  const content = document.createElement("strong");
+
+  field.className = "quick-field";
+
+  if (className) {
+    field.classList.add(className);
+  }
+
+  term.textContent = label;
+  content.textContent = String(value).trim();
+
+  field.append(term, content);
+  container.append(field);
+}
+
+function appendDetailSectionTo(
+  container,
+  title,
+  fields
+) {
   const populatedFields = fields.filter(
-    ([, value]) =>
-      value !== null &&
-      value !== undefined &&
-      String(value).trim() !== ""
+    ([, value]) => hasValue(value)
   );
 
   if (populatedFields.length === 0) {
@@ -656,17 +804,17 @@ function appendDetailSection(title, fields) {
     const description = document.createElement("dd");
 
     term.textContent = label;
-    description.textContent = value;
+    description.textContent = String(value).trim();
 
     item.append(term, description);
     grid.append(item);
   }
 
   section.append(heading, grid);
-  elements.itemDetailContent.append(section);
+  container.append(section);
 }
 
-function appendSourceSection(record) {
+function appendSourceSectionTo(container, record) {
   const sourceFields = [
     ["EQL source", record.eql_source_url],
     ["EQL Wiki", record.eql_wiki_url],
@@ -689,8 +837,8 @@ function appendSourceSection(record) {
   const links = document.createElement("div");
 
   section.className = "detail-section";
-  links.className = "source-links";
   heading.textContent = "Sources";
+  links.className = "source-links";
 
   for (const [label, value] of validSources) {
     const link = document.createElement("a");
@@ -704,7 +852,26 @@ function appendSourceSection(record) {
   }
 
   section.append(heading, links);
-  elements.itemDetailContent.append(section);
+  container.append(section);
+}
+
+function firstPopulatedValue(...values) {
+  return values.find(value => hasValue(value)) ?? "";
+}
+
+function combineValues(...values) {
+  return values
+    .filter(value => hasValue(value))
+    .map(value => String(value).trim())
+    .join(" • ");
+}
+
+function hasValue(value) {
+  return (
+    value !== null &&
+    value !== undefined &&
+    String(value).trim() !== ""
+  );
 }
 
 function closeItemDetails() {
@@ -720,7 +887,9 @@ function handleDialogBackdropClick(event) {
 function appendCell(row, value, className = "") {
   const cell = document.createElement("td");
 
-  cell.textContent = value || "—";
+  cell.textContent = hasValue(value)
+    ? String(value)
+    : "—";
 
   if (className) {
     cell.className = className;
@@ -856,12 +1025,12 @@ function displayFallbackError(message) {
 }
 
 function isSafeHttpUrl(value) {
-  if (!value) {
+  if (!hasValue(value)) {
     return false;
   }
 
   try {
-    const url = new URL(value);
+    const url = new URL(String(value).trim());
 
     return (
       url.protocol === "http:" ||
