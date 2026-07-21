@@ -212,7 +212,8 @@ select {
 input:focus,
 select:focus,
 button:focus-visible,
-a:focus-visible {
+a:focus-visible,
+summary:focus-visible {
   border-color: var(--accent);
   outline: 2px solid rgb(201 168 91 / 30%);
   outline-offset: 2px;
@@ -407,7 +408,7 @@ details summary {
 }
 
 .item-dialog {
-  width: min(1000px, calc(100% - 2rem));
+  width: min(820px, calc(100% - 2rem));
   max-height: calc(100vh - 2rem);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
@@ -437,14 +438,14 @@ details summary {
   align-items: flex-start;
   gap: 1rem;
   border-bottom: 1px solid var(--border);
-  padding: 1.25rem;
+  padding: 1.15rem 1.25rem;
   background: var(--surface-raised);
 }
 
 .dialog-header h2 {
   color: var(--accent-light);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
 }
 
 .detail-subtitle {
@@ -461,6 +462,93 @@ details summary {
   padding: 1.25rem;
 }
 
+.quick-detail-card {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.quick-field {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.85rem;
+  background: var(--surface-dark);
+}
+
+.quick-field-wide {
+  grid-column: 1 / -1;
+}
+
+.quick-field span {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.quick-field strong {
+  display: block;
+  color: var(--text);
+  font-size: 0.98rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.advanced-detail-drawer {
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface-dark);
+}
+
+.advanced-detail-drawer > summary {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  list-style: none;
+  cursor: pointer;
+}
+
+.advanced-detail-drawer > summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced-detail-drawer > summary::before {
+  content: "▸";
+  color: var(--accent);
+  font-size: 1rem;
+  transition: transform 0.15s ease;
+}
+
+.advanced-detail-drawer[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.drawer-label {
+  color: var(--accent-light);
+  font-weight: 700;
+}
+
+.drawer-hint {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 400;
+  text-align: right;
+}
+
+.advanced-detail-content {
+  border-top: 1px solid var(--border);
+  padding: 1rem;
+}
+
 .detail-section {
   margin-bottom: 1.5rem;
   border-bottom: 1px solid var(--border);
@@ -470,6 +558,7 @@ details summary {
 .detail-section:last-child {
   margin-bottom: 0;
   border-bottom: 0;
+  padding-bottom: 0;
 }
 
 .detail-grid {
@@ -491,7 +580,7 @@ details summary {
 .detail-grid dt {
   margin-bottom: 0.25rem;
   color: var(--muted);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -551,6 +640,7 @@ footer {
 
   .filter-grid,
   .summary-grid,
+  .quick-detail-card,
   .detail-grid {
     grid-template-columns: 1fr;
   }
@@ -574,5 +664,18 @@ footer {
 
   .dialog-close-button {
     align-self: flex-start;
+  }
+
+  .quick-field-wide {
+    grid-column: auto;
+  }
+
+  .advanced-detail-drawer > summary {
+    grid-template-columns: auto 1fr;
+  }
+
+  .drawer-hint {
+    grid-column: 2;
+    text-align: left;
   }
 }
