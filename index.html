@@ -8,50 +8,220 @@
     content="width=device-width, initial-scale=1.0"
   >
 
+  <meta
+    name="description"
+    content="Search and compare audited EverQuest Legends loot records by zone, class, slot, source, and verification status."
+  >
+
   <title>EverQuest Legends Loot Explorer</title>
 
   <link rel="stylesheet" href="./css/app.css">
 </head>
 
 <body>
-  <main>
-    <h1>EverQuest Legends Loot Explorer</h1>
+  <header class="site-header">
+    <div>
+      <p class="eyebrow">Community Database Tool</p>
 
-    <p>
-      GitHub Pages deployment and CSV discovery test
-    </p>
+      <h1>EverQuest Legends Loot Explorer</h1>
 
-    <section>
-      <h2>Database Status</h2>
-
-      <p id="status">
-        Loading manifest…
+      <p class="subtitle">
+        Search audited loot records and identify zones
+        containing useful equipment and items.
       </p>
+    </div>
 
-      <dl>
+    <p id="status" class="status" aria-live="polite">
+      Loading database…
+    </p>
+  </header>
+
+  <main>
+    <section class="summary-grid">
+      <article class="summary-card">
+        <span>CSV files</span>
+        <strong id="file-count">0</strong>
+      </article>
+
+      <article class="summary-card">
+        <span>Database records</span>
+        <strong id="record-count">0</strong>
+      </article>
+
+      <article class="summary-card">
+        <span>Matching records</span>
+        <strong id="match-count">0</strong>
+      </article>
+
+      <article class="summary-card">
+        <span>Matching zones</span>
+        <strong id="zone-count">0</strong>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
         <div>
-          <dt>CSV files discovered</dt>
-          <dd id="file-count">—</dd>
+          <p class="eyebrow">Loot search</p>
+          <h2>Filters</h2>
         </div>
 
+        <button id="reset-filters" type="button">
+          Reset filters
+        </button>
+      </div>
+
+      <div class="filter-grid">
+        <label class="search-control">
+          Search all loot information
+
+          <input
+            id="search-filter"
+            type="search"
+            placeholder="Item, NPC, stats, effect, zone, notes…"
+          >
+        </label>
+
+        <label>
+          Continent
+
+          <select id="continent-filter">
+            <option value="">All continents</option>
+          </select>
+        </label>
+
+        <label>
+          Zone
+
+          <select id="zone-filter">
+            <option value="">All zones</option>
+          </select>
+        </label>
+
+        <label>
+          Item category
+
+          <select id="category-filter">
+            <option value="">All categories</option>
+          </select>
+        </label>
+
+        <label>
+          Equipment slot
+
+          <select id="slot-filter">
+            <option value="">All slots</option>
+          </select>
+        </label>
+
+        <label>
+          EQL class
+
+          <select id="class-filter">
+            <option value="">All classes</option>
+          </select>
+        </label>
+
+        <label>
+          EQL verification
+
+          <select id="verification-filter">
+            <option value="">
+              All verification statuses
+            </option>
+          </select>
+        </label>
+
+        <label>
+          Data confidence
+
+          <select id="confidence-filter">
+            <option value="">
+              All confidence levels
+            </option>
+          </select>
+        </label>
+
+        <label class="checkbox-control">
+          <input
+            id="approved-filter"
+            type="checkbox"
+            checked
+          >
+
+          Show approved records only
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
         <div>
-          <dt>Declared records</dt>
-          <dd id="record-count">—</dd>
+          <p class="eyebrow">Zone planning</p>
+          <h2>Matching zones</h2>
         </div>
+      </div>
 
+      <div class="table-wrapper zone-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Zone</th>
+              <th>Matching items</th>
+              <th>Slots represented</th>
+              <th>EQL-confirmed</th>
+            </tr>
+          </thead>
+
+          <tbody id="zone-summary-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
         <div>
-          <dt>Manifest generated</dt>
-          <dd id="generated-at">—</dd>
+          <p class="eyebrow">Database results</p>
+          <h2>Matching items</h2>
         </div>
-      </dl>
+      </div>
 
-      <h2>Discovered CSV Files</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Slot</th>
+              <th>Zone</th>
+              <th>Source NPC</th>
+              <th>EQL NPC level</th>
+              <th>EQL classes</th>
+              <th>Preferred stats</th>
+              <th>Verification</th>
+              <th>Confidence</th>
+              <th>Approved</th>
+            </tr>
+          </thead>
 
-      <ul id="file-list">
-        <li>Waiting for manifest…</li>
-      </ul>
+          <tbody id="results-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <details>
+        <summary>Database diagnostics</summary>
+
+        <div id="diagnostics">
+          <p>Diagnostics will appear after loading.</p>
+        </div>
+      </details>
     </section>
   </main>
+
+  <footer>
+    EverQuest Legends community loot research tool
+  </footer>
 
   <script type="module" src="./js/app.js"></script>
 </body>
