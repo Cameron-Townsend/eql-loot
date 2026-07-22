@@ -179,6 +179,123 @@ const STAT_DEFINITIONS = [
   }
 ];
 
+/*
+ * Known focus-effect families.
+ *
+ * Exact ranks, percentages, tiers, and spelling variants are collapsed
+ * into one user-facing category. The original CSV text is never changed.
+ *
+ * Add new families here as they appear in researched EQL data.
+ */
+const FOCUS_EFFECT_DEFINITIONS = [
+  {
+    name: "Improved Healing",
+    patterns: [
+      /\bIMPROVED\s+HEALING\b/i,
+      /\bHEALING\s+ENHANCEMENT\b/i
+    ]
+  },
+  {
+    name: "Mana Preservation",
+    patterns: [
+      /\bMANA\s+PRESERVATION\b/i,
+      /\bMANA\s+CONSERVATION\b/i
+    ]
+  },
+  {
+    name: "Extended Enhancement",
+    patterns: [
+      /\bEXTENDED\s+ENHANCEMENT\b/i,
+      /\bEXTENDED\s+BUFFS?\b/i
+    ]
+  },
+  {
+    name: "Spell Haste",
+    patterns: [
+      /\bSPELL\s+HASTE\b/i,
+      /\bCASTING\s+HASTE\b/i
+    ]
+  },
+  {
+    name: "Improved Damage",
+    patterns: [
+      /\bIMPROVED\s+DAMAGE\b/i
+    ]
+  },
+  {
+    name: "Burning Affliction",
+    patterns: [
+      /\bBURNING\s+AFFLICTION\b/i
+    ]
+  },
+  {
+    name: "Affliction Efficiency",
+    patterns: [
+      /\bAFFLICTION\s+EFFICIENCY\b/i
+    ]
+  },
+  {
+    name: "Affliction Haste",
+    patterns: [
+      /\bAFFLICTION\s+HASTE\b/i
+    ]
+  },
+  {
+    name: "Affliction Duration",
+    patterns: [
+      /\bAFFLICTION\s+DURATION\b/i,
+      /\bEXTENDED\s+AFFLICTION\b/i
+    ]
+  },
+  {
+    name: "Reagent Conservation",
+    patterns: [
+      /\bREAGENT\s+CONSERVATION\b/i,
+      /\bCONSERVE\s+REAGENT\b/i
+    ]
+  },
+  {
+    name: "Improved Reclaim Energy",
+    patterns: [
+      /\bIMPROVED\s+RECLAIM\s+ENERGY\b/i,
+      /\bRECLAIM\s+ENERGY\b/i
+    ]
+  },
+  {
+    name: "Pet Enhancement",
+    patterns: [
+      /\bPET\s+ENHANCEMENT\b/i,
+      /\bENHANCED\s+MINION\b/i,
+      /\bMINION\s+ENHANCEMENT\b/i
+    ]
+  },
+  {
+    name: "Summoning Efficiency",
+    patterns: [
+      /\bSUMMONING\s+EFFICIENCY\b/i,
+      /\bSUMMONING\s+PRESERVATION\b/i
+    ]
+  },
+  {
+    name: "Improved Dodge",
+    patterns: [
+      /\bIMPROVED\s+DODGE\b/i
+    ]
+  },
+  {
+    name: "Improved Block",
+    patterns: [
+      /\bIMPROVED\s+BLOCK\b/i
+    ]
+  },
+  {
+    name: "Improved Parry",
+    patterns: [
+      /\bIMPROVED\s+PARRY\b/i
+    ]
+  }
+];
+
 export function createFilterOptions(records) {
   return {
     continents: getUniqueLogicalValues(
@@ -235,6 +352,10 @@ export function createFilterOptions(records) {
       records,
       "targetPriority"
     ),
+
+    effectTypes: getAvailableEffectTypes(records),
+
+    focusEffects: getAvailableFocusEffects(records),
 
     stats: getAvailableStats(records)
   };
@@ -372,6 +493,24 @@ export function filterRecords(records, filters) {
     }
 
     if (
+      filters.effectType &&
+      !getRecordEffectTypes(record).includes(
+        filters.effectType
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      filters.focusEffect &&
+      !getRecordFocusEffects(record).includes(
+        filters.focusEffect
+      )
+    ) {
+      return false;
+    }
+
+    if (
       filters.effectTransferValue &&
       getField(record, "effectTransferValue") !==
         filters.effectTransferValue
@@ -457,6 +596,91 @@ export function getRecordStats(record) {
     .map(definition => definition.name);
 }
 
+/*
+ * Returns a record's normalized focus families.
+ *
+ * One item may theoretically contain multiple focus families.
+ */
+export function getRecordFocusEffects(record) {
+  const effectText = getEffectText(record);
+
+  if (!effectText) {
+    return [];
+  }
+
+  const matchedFamilies = FOCUS_EFFECT_DEFINITIONS
+    .filter(definition =>
+      definition.patterns.some(pattern =>
+        pattern.test(effectText)
+      )
+    )
+    .map(definition => definition.name);
+
+  if (matchedFamilies.length > 0) {
+    return matchedFamilies;
+  }
+
+  /*
+   * Future-proof fallback:
+   *
+   * If the CSV clearly labels something as a focus but it is not yet in
+   * FOCUS_EFFECT_DEFINITIONS, create a cleaned family name by removing
+   * ranks, percentages, and common tier suffixes.
+   */
+  if (/\bFOCUS\b/i.test(effectText)) {
+    const fallbackName =
+      normalizeUnknownFocusName(effectText);
+
+    return fallbackName
+      ? [fallbackName]
+      : ["Other Focus Effect"];
+  }
+
+  return [];
+}
+
+export function getRecordEffectTypes(record) {
+  const effectText = getEffectText(record);
+
+  if (!effectText) {
+    return [];
+  }
+
+  const types = new Set();
+
+  if (
+    /\bPROC\b/i.test(effectText) ||
+    /\bPROCS?\b/i.test(effectText)
+  ) {
+    types.add("Proc");
+  }
+
+  if (
+    /\bCLICK\b/i.test(effectText) ||
+    /\bCLICKY\b/i.test(effectText) ||
+    /\bRIGHT[\s-]*CLICK\b/i.test(effectText)
+  ) {
+    types.add("Click");
+  }
+
+  if (
+    /\bFOCUS\b/i.test(effectText) ||
+    getRecordFocusEffects(record).length > 0
+  ) {
+    types.add("Focus");
+  }
+
+  /*
+   * If an effect is present but no explicit type word exists, keep it
+   * available under Other rather than discarding it.
+   */
+  if (types.size === 0) {
+    types.add("Other");
+  }
+
+  return [...types];
+}
+
 export function getZoneSummary(records) {
   const zoneMap = new Map();
 
@@ -502,6 +726,97 @@ export function getZoneSummary(records) {
 
       return naturalCompare(left.zone, right.zone);
     });
+}
+
+function getAvailableEffectTypes(records) {
+  const values = new Set();
+
+  for (const record of records) {
+    for (const type of getRecordEffectTypes(record)) {
+      values.add(type);
+    }
+  }
+
+  const preferredOrder = [
+    "Focus",
+    "Click",
+    "Proc",
+    "Other"
+  ];
+
+  return [...values].sort(
+    (left, right) =>
+      preferredOrder.indexOf(left) -
+      preferredOrder.indexOf(right)
+  );
+}
+
+function getAvailableFocusEffects(records) {
+  const values = new Set();
+
+  for (const record of records) {
+    for (
+      const focusEffect
+      of getRecordFocusEffects(record)
+    ) {
+      values.add(focusEffect);
+    }
+  }
+
+  return [...values].sort(naturalCompare);
+}
+
+function getEffectText(record) {
+  return [
+    getField(record, "procClickFocus"),
+    getField(record, "effectDescription")
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+}
+
+function normalizeUnknownFocusName(effectText) {
+  let cleaned = normalizeText(effectText);
+
+  cleaned = cleaned
+    .replace(/\bFOCUS(?:\s+EFFECT)?\s*[:\-]?\s*/gi, "")
+    .replace(/\bRANK\s*[IVXLCDM\d]+\b/gi, "")
+    .replace(/\bTIER\s*[IVXLCDM\d]+\b/gi, "")
+    .replace(/\bLEVEL\s*\d+\b/gi, "")
+    .replace(/\b[IVXLCDM]+\b$/gi, "")
+    .replace(/\b\d+(?:\.\d+)?\s*%\b/g, "")
+    .replace(/\b\d+\b$/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/^[\s:;,\-–—]+|[\s:;,\-–—]+$/g, "")
+    .trim();
+
+  if (!cleaned) {
+    return "";
+  }
+
+  /*
+   * Prevent an entire descriptive sentence from becoming a dropdown value.
+   */
+  if (
+    cleaned.length > 50 ||
+    cleaned.split(/\s+/).length > 7
+  ) {
+    return "Other Focus Effect";
+  }
+
+  return toTitleCase(cleaned);
+}
+
+function toTitleCase(value) {
+  return normalizeLower(value)
+    .split(/\s+/)
+    .map(word =>
+      word.length > 0
+        ? word[0].toUpperCase() + word.slice(1)
+        : word
+    )
+    .join(" ");
 }
 
 function matchesNpcLevelRange(
@@ -586,12 +901,7 @@ function matchesEffectPresence(record, filterValue) {
     return true;
   }
 
-  const effectText = [
-    getField(record, "procClickFocus"),
-    getField(record, "effectDescription")
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const effectText = getEffectText(record);
 
   if (filterValue === "yes") {
     return effectText !== "";
@@ -637,6 +947,9 @@ function buildSearchText(record) {
     getField(record, "sourceNpc"),
     getPreferredNpcLevel(record),
     getField(record, "procClickFocus"),
+    getField(record, "effectDescription"),
+    getRecordFocusEffects(record).join(" "),
+    getRecordEffectTypes(record).join(" "),
     getField(record, "dropFrequency"),
     getField(record, "generalValueNotes"),
     getField(record, "spawnLocation"),
