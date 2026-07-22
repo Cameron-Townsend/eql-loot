@@ -23,7 +23,8 @@ import {
 import {
   createFilterOptions,
   filterRecords,
-  getRecordStats,
+  getRecordEffectTypes,
+  getRecordFocusEffects,
   getZoneSummary
 } from "./filters.js";
 
@@ -157,6 +158,12 @@ function captureElements() {
   elements.effectPresent =
     document.querySelector("#effect-present-filter");
 
+  elements.effectType =
+    document.querySelector("#effect-type-filter");
+
+  elements.focusEffect =
+    document.querySelector("#focus-effect-filter");
+
   elements.effectTransfer =
     document.querySelector("#effect-transfer-filter");
 
@@ -242,6 +249,8 @@ function bindEvents() {
     elements.questItem,
     elements.inventoryOnly,
     elements.effectPresent,
+    elements.effectType,
+    elements.focusEffect,
     elements.effectTransfer,
     elements.verification,
     elements.auditAction,
@@ -262,6 +271,11 @@ function bindEvents() {
       applyCurrentFilters
     );
   }
+
+  elements.effectType.addEventListener(
+    "change",
+    updateFocusFilterAvailability
+  );
 
   elements.resetButton.addEventListener(
     "click",
@@ -332,6 +346,18 @@ function populateFilters(options) {
   );
 
   populateSelect(
+    elements.effectType,
+    options.effectTypes,
+    "All effect types"
+  );
+
+  populateSelect(
+    elements.focusEffect,
+    options.focusEffects,
+    "All focus effects"
+  );
+
+  populateSelect(
     elements.effectTransfer,
     options.effectTransferValues,
     "All values"
@@ -358,6 +384,27 @@ function populateFilters(options) {
     options.targetPriorities,
     "All priorities"
   );
+
+  updateFocusFilterAvailability();
+}
+
+function updateFocusFilterAvailability() {
+  const selectedType = elements.effectType.value;
+
+  /*
+   * The focus family remains usable when no effect type is selected,
+   * allowing direct focus searches. It becomes disabled only when the
+   * user explicitly selects a non-focus effect type.
+   */
+  const disabled =
+    selectedType !== "" &&
+    selectedType !== "Focus";
+
+  elements.focusEffect.disabled = disabled;
+
+  if (disabled) {
+    elements.focusEffect.value = "";
+  }
 }
 
 function populateVerificationSelect(statuses) {
@@ -506,6 +553,8 @@ function applyCurrentFilters() {
     questItem: elements.questItem.value,
     inventoryOnly: elements.inventoryOnly.value,
     effectPresent: elements.effectPresent.value,
+    effectType: elements.effectType.value,
+    focusEffect: elements.focusEffect.value,
 
     effectTransferValue:
       elements.effectTransfer.value,
@@ -546,795 +595,31 @@ function applyCurrentFilters() {
   updateCounts();
 }
 
-function renderResults() {
-  elements.resultsBody.replaceChildren();
-
-  const maximumRows = 500;
-
-  const displayedRecords =
-    state.filteredRecords.slice(0, maximumRows);
-
-  for (const record of displayedRecords) {
-    const row = document.createElement("tr");
-
-    const itemCell = document.createElement("td");
-    const itemButton = document.createElement("button");
-
-    itemButton.type = "button";
-    itemButton.className = "item-link-button";
-
-    itemButton.dataset.recordId =
-      getField(record, "recordId");
-
-    itemButton.textContent =
-      getField(record, "itemName") ||
-      "Unnamed item";
-
-    itemCell.className = "item-name";
-    itemCell.append(itemButton);
-    row.append(itemCell);
-
-    appendCell(
-      row,
-      getField(record, "zone")
-    );
-
-    appendCell(
-      row,
-      getField(record, "slot")
-    );
-
-    appendCell(
-      row,
-      getPreferredStats(record)
-    );
-
-    appendCell(
-      row,
-      getPreferredClasses(record)
-    );
-
-    appendCell(
-      row,
-      getField(record, "sourceNpc")
-    );
-
-    appendCell(
-      row,
-      getPreferredNpcLevel(record)
-    );
-
-    appendCell(
-      row,
-      getField(record, "procClickFocus")
-    );
-
-    appendBadgeCell(
-      row,
-      getField(record, "verificationStatus")
-    );
-
-    appendCell(
-      row,
-      getField(record, "confidence")
-    );
-
-    elements.resultsBody.append(row);
-  }
-
-  if (displayedRecords.length === 0) {
-    const row = document.createElement("tr");
-    const cell = document.createElement("td");
-
-    cell.colSpan = 10;
-    cell.textContent =
-      "No loot records match the active filters.";
-
-    row.append(cell);
-    elements.resultsBody.append(row);
-  }
-}
-
-function appendBadgeCell(row, status) {
-  const cell = document.createElement("td");
-  const badge = createVerificationBadge(status);
-
-  cell.append(badge);
-  row.append(cell);
-}
-
-function createVerificationBadge(status) {
-  const badge = document.createElement("span");
-
-  badge.className = [
-    "verification-badge",
-    getVerificationBadgeClass(status)
-  ].join(" ");
-
-  badge.textContent =
-    status || "Status not recorded";
-
-  return badge;
-}
-
-function renderZoneSummary() {
-  const summaries = getZoneSummary(
-    state.filteredRecords
-  );
-
-  elements.zoneSummaryBody.replaceChildren();
-
-  for (const summary of summaries) {
-    const row = document.createElement("tr");
-
-    appendCell(row, summary.zone);
-    appendCell(row, summary.itemCount);
-    appendCell(row, summary.slotCount);
-    appendCell(row, summary.confirmedCount);
-
-    elements.zoneSummaryBody.append(row);
-  }
-
-  if (summaries.length === 0) {
-    const row = document.createElement("tr");
-    const cell = document.createElement("td");
-
-    cell.colSpan = 4;
-    cell.textContent =
-      "No zones match the active filters.";
-
-    row.append(cell);
-    elements.zoneSummaryBody.append(row);
-  }
-}
-
-function handleResultClick(event) {
-  const button = event.target.closest(
-    "button[data-record-id]"
-  );
-
-  if (!button) {
-    return;
-  }
-
-  const record =
-    state.recordsById.get(button.dataset.recordId);
-
-  if (!record) {
-    return;
-  }
-
-  openItemDetails(record);
-}
-
-function openItemDetails(record) {
-  const itemName =
-    getField(record, "itemName") ||
-    "Unnamed item";
-
-  const category =
-    getField(record, "itemCategory");
-
-  const slot =
-    getField(record, "slot");
-
-  elements.detailItemName.textContent = itemName;
-
-  elements.detailItemSubtitle.textContent = [
-    slot,
-    category,
-    getField(record, "zone")
-  ]
-    .filter(Boolean)
-    .join(" • ");
-
-  elements.itemDetailContent.replaceChildren();
-
-  const statusRow = document.createElement("div");
-  statusRow.className = "popup-status-row";
-
-  statusRow.append(
-    createVerificationBadge(
-      getField(record, "verificationStatus")
-    )
-  );
-
-  const confidence =
-    getField(record, "confidence");
-
-  if (confidence) {
-    const confidenceBadge =
-      document.createElement("span");
-
-    confidenceBadge.className =
-      "confidence-badge";
-
-    confidenceBadge.textContent =
-      `${confidence} confidence`;
-
-    statusRow.append(confidenceBadge);
-  }
-
-  elements.itemDetailContent.append(statusRow);
-
-  if (isQuarantined(record)) {
-    appendQuarantineWarning(
-      elements.itemDetailContent
-    );
-  }
-
-  const quickCard =
-    document.createElement("section");
-
-  quickCard.className = "quick-detail-card";
-
-  appendQuickField(
-    quickCard,
-    "Slot and category",
-    combineValues(slot, category)
-  );
-
-  appendQuickField(
-    quickCard,
-    "EQL stats",
-    getPreferredStats(record),
-    "quick-field-wide"
-  );
-
-  appendQuickField(
-    quickCard,
-    "EQL classes",
-    getPreferredClasses(record)
-  );
-
-  appendQuickField(
-    quickCard,
-    "EQL races",
-    getPreferredRaces(record)
-  );
-
-  appendQuickField(
-    quickCard,
-    "Source NPC",
-    getField(record, "sourceNpc")
-  );
-
-  appendQuickField(
-    quickCard,
-    "NPC level",
-    getPreferredNpcLevel(record)
-  );
-
-  appendQuickField(
-    quickCard,
-    "Zone",
-    getField(record, "zone")
-  );
-
-  appendQuickField(
-    quickCard,
-    "Spawn location",
-    getField(record, "spawnLocation")
-  );
-
-  appendQuickField(
-    quickCard,
-    "Proc, click, or focus",
-    combineValues(
-      getField(record, "procClickFocus"),
-      getField(record, "effectDescription")
-    ),
-    "quick-field-wide"
-  );
-
-  appendQuickField(
-    quickCard,
-    "Drop frequency",
-    combineValues(
-      getField(record, "dropFrequency"),
-      getField(record, "dropRateReported")
-    )
-  );
-
-  appendQuickField(
-    quickCard,
-    "General value",
-    getField(record, "generalValueNotes"),
-    "quick-field-wide"
-  );
-
-  elements.itemDetailContent.append(quickCard);
-
-  appendExpandableSection(
-    elements.itemDetailContent,
-    "Drop Details",
-    "Spawn behavior, hazards, and drop information",
-    [
-      ["Placeholder", getField(record, "placeholder")],
-      [
-        "Placeholder level range",
-        getField(record, "placeholderLevelRange")
-      ],
-      [
-        "Respawn timer",
-        getField(record, "respawnTimer")
-      ],
-      [
-        "Time condition",
-        getField(record, "timeCondition")
-      ],
-      [
-        "Nearby enemy levels",
-        getField(record, "nearbyEnemyLevelRange")
-      ],
-      [
-        "Spawn type",
-        getField(record, "spawnType")
-      ],
-      [
-        "Special abilities",
-        getField(record, "specialAbilities")
-      ],
-      [
-        "Add risk",
-        getField(record, "socialAddRisk")
-      ],
-      [
-        "Faction consequences",
-        getField(record, "factionConsequences")
-      ],
-      [
-        "Drop-rate notes",
-        combineValues(
-          getField(record, "dropRateReported"),
-          getField(record, "dropNotes")
-        )
-      ]
-    ]
-  );
-
-  appendExpandableSection(
-    elements.itemDetailContent,
-    "EQL Mechanics",
-    "Transfer, extraction, upgrading, and observed mechanics",
-    [
-      [
-        "Effect-transfer value",
-        getField(record, "effectTransferValue")
-      ],
-      [
-        "Effect extractable",
-        getField(record, "effectExtractable")
-      ],
-      [
-        "Effect extraction rank",
-        getField(record, "effectExtractionRank")
-      ],
-      [
-        "Upgradeable",
-        getField(record, "upgradeable")
-      ],
-      [
-        "Maximum upgrade rank",
-        getField(record, "maximumUpgradeRank")
-      ],
-      [
-        "Duplicate-farming value",
-        getField(record, "duplicateFarmingValue")
-      ],
-      [
-        "Challenge tier observed",
-        getField(record, "challengeTierObserved")
-      ],
-      [
-        "Personal loot confirmed",
-        getField(record, "personalLootConfirmed")
-      ]
-    ]
-  );
-
-  appendExpandableSection(
-    elements.itemDetailContent,
-    "Classic Comparison",
-    "Classic baseline values retained for comparison",
-    [
-      [
-        "Classic stats",
-        getField(record, "statsClassic")
-      ],
-      [
-        "Classic classes",
-        getField(record, "classesClassic")
-      ],
-      [
-        "Classic races",
-        getField(record, "racesClassic")
-      ],
-      [
-        "Classic NPC level",
-        getField(record, "sourceNpcLevelClassic")
-      ],
-      [
-        "Era status",
-        getField(record, "eraStatus")
-      ],
-      [
-        "Classic baseline notes",
-        getField(record, "classicBaselineNotes")
-      ]
-    ]
-  );
-
-  appendResearchSection(record);
-
-  elements.itemDialog.showModal();
-}
-
-function appendQuarantineWarning(container) {
-  const warning = document.createElement("aside");
-
-  warning.className = "quarantine-warning";
-
-  const heading = document.createElement("strong");
-  const body = document.createElement("p");
-
-  heading.textContent =
-    "Quarantined research record";
-
-  body.textContent =
-    "This item or drop source is retained as classic or investigative " +
-    "research, but it is not currently confirmed for EverQuest Legends.";
-
-  warning.append(heading, body);
-  container.append(warning);
-}
-
-function appendResearchSection(record) {
-  const fields = [
-    [
-      "Last checked",
-      getField(record, "eqlLastChecked")
-    ],
-    [
-      "Official patch date",
-      getField(record, "officialPatchDate")
-    ],
-    [
-      "Evidence strength",
-      getField(record, "evidenceStrength")
-    ],
-    [
-      "Current-build confirmed",
-      getField(record, "currentBuildConfirmed")
-    ],
-    [
-      "Conflict status",
-      getField(record, "conflictStatus")
-    ],
-    [
-      "Audit action",
-      getField(record, "auditAction")
-    ],
-    [
-      "Change summary",
-      getField(record, "eqlChangesSummary")
-    ],
-    [
-      "Verification notes",
-      getField(record, "eqlVerificationNotes")
-    ],
-    [
-      "Research notes",
-      getField(record, "researchNotes")
-    ],
-    [
-      "Revision",
-      getField(record, "revision")
-    ],
-    [
-      "Approved",
-      getField(record, "approved")
-    ],
-    [
-      "Source file",
-      record.__sourceFile
-    ]
-  ];
-
-  const links =
-    getPreferredSourceLinks(record);
-
-  const evidenceCount =
-    record.__evidence?.length ?? 0;
-
-  const historyCount =
-    record.__changeHistory?.length ?? 0;
-
-  if (evidenceCount > 0) {
-    fields.push([
-      "Attached evidence records",
-      String(evidenceCount)
-    ]);
-  }
-
-  if (historyCount > 0) {
-    fields.push([
-      "Attached change-history records",
-      String(historyCount)
-    ]);
-  }
-
-  appendExpandableSection(
-    elements.itemDetailContent,
-    "Research & Sources",
-    "Verification, conflicts, provenance, and research notes",
-    fields,
-    links
-  );
-}
-
-function appendExpandableSection(
-  container,
-  title,
-  hint,
-  fields,
-  links = []
-) {
-  const populatedFields = fields.filter(
-    ([, value]) => hasValue(value)
-  );
-
-  if (
-    populatedFields.length === 0 &&
-    links.length === 0
-  ) {
-    return;
-  }
-
-  const drawer = document.createElement("details");
-
-  drawer.className = "advanced-detail-drawer";
-
-  const summary = document.createElement("summary");
-  const label = document.createElement("span");
-  const hintElement = document.createElement("span");
-
-  label.className = "drawer-label";
-  label.textContent = title;
-
-  hintElement.className = "drawer-hint";
-  hintElement.textContent = hint;
-
-  summary.append(label, hintElement);
-  drawer.append(summary);
-
-  const content = document.createElement("div");
-
-  content.className = "advanced-detail-content";
-
-  if (populatedFields.length > 0) {
-    const grid = document.createElement("dl");
-
-    grid.className = "detail-grid";
-
-    for (const [fieldLabel, value] of populatedFields) {
-      const item = document.createElement("div");
-      const term = document.createElement("dt");
-      const description = document.createElement("dd");
-
-      term.textContent = fieldLabel;
-      description.textContent = value;
-
-      item.append(term, description);
-      grid.append(item);
-    }
-
-    content.append(grid);
-  }
-
-  if (links.length > 0) {
-    const sourceHeading = document.createElement("h3");
-    const sourceLinks = document.createElement("div");
-
-    sourceHeading.textContent = "Source links";
-    sourceLinks.className = "source-links";
-
-    for (const linkData of links) {
-      const link = document.createElement("a");
-
-      link.href = linkData.url;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.textContent = linkData.label;
-
-      sourceLinks.append(link);
-    }
-
-    content.append(
-      sourceHeading,
-      sourceLinks
-    );
-  }
-
-  drawer.append(content);
-  container.append(drawer);
-}
-
-function appendQuickField(
-  container,
-  label,
-  value,
-  className = ""
-) {
-  if (!hasValue(value)) {
-    return;
-  }
-
-  const field = document.createElement("div");
-  const term = document.createElement("span");
-  const content = document.createElement("strong");
-
-  field.className = "quick-field";
-
-  if (className) {
-    field.classList.add(className);
-  }
-
-  term.textContent = label;
-  content.textContent = value;
-
-  field.append(term, content);
-  container.append(field);
-}
-
-function combineValues(...values) {
-  return values
-    .filter(value => hasValue(value))
-    .map(value => String(value).trim())
-    .join(" • ");
-}
-
-function closeItemDetails() {
-  elements.itemDialog.close();
-}
-
-function handleDialogBackdropClick(event) {
-  if (event.target === elements.itemDialog) {
-    closeItemDetails();
-  }
-}
-
-function appendCell(
-  row,
-  value,
-  className = ""
-) {
-  const cell = document.createElement("td");
-
-  cell.textContent = hasValue(value)
-    ? String(value)
-    : "—";
-
-  if (className) {
-    cell.className = className;
-  }
-
-  row.append(cell);
-}
-
-function updateCounts() {
-  const zones = new Set(
-    state.filteredRecords
-      .map(record =>
-        getField(record, "zone")
-      )
-      .filter(Boolean)
-  );
-
-  elements.fileCount.textContent =
-    String(state.manifest?.fileCount ?? 0);
-
-  elements.recordCount.textContent =
-    String(state.records.length);
-
-  elements.matchCount.textContent =
-    String(state.filteredRecords.length);
-
-  elements.zoneCount.textContent =
-    String(zones.size);
-}
-
-function renderDiagnostics() {
-  const diagnostics = state.diagnostics;
-
-  elements.diagnostics.replaceChildren();
-
-  appendDiagnostic(
-    `Files discovered: ${diagnostics.filesDiscovered}`
-  );
-
-  appendDiagnostic(
-    `Files loaded: ${diagnostics.filesLoaded}`
-  );
-
-  appendDiagnostic(
-    `Loot files: ${diagnostics.lootFiles}`
-  );
-
-  appendDiagnostic(
-    `Evidence files attached: ${diagnostics.evidenceFiles}`
-  );
-
-  appendDiagnostic(
-    `Change-history files attached: ${diagnostics.historyFiles}`
-  );
-
-  appendDiagnostic(
-    `Unknown datasets ignored: ${diagnostics.unknownFiles}`
-  );
-
-  appendDiagnostic(
-    `Files failed: ${diagnostics.filesFailed}`
-  );
-
-  appendDiagnostic(
-    `Raw loot records: ${diagnostics.rawLootRecords}`
-  );
-
-  appendDiagnostic(
-    `Unique records: ${diagnostics.uniqueRecords}`
-  );
-
-  appendDiagnostic(
-    `Duplicate record IDs: ${
-      diagnostics.duplicateRecords.length
-    }`
-  );
-
-  appendDiagnostic(
-    `Malformed records: ${
-      diagnostics.malformedRecords.length
-    }`
-  );
-
-  appendDiagnostic(
-    `Loot files missing required columns: ${
-      diagnostics.missingRequiredColumns.length
-    }`
-  );
-
-  for (
-    const problem
-    of diagnostics.missingRequiredColumns
-  ) {
-    appendDiagnostic(
-      `${problem.file}: missing ${problem.columns.join(", ")}`,
-      "warning"
-    );
-  }
-
-  for (const error of diagnostics.fileErrors) {
-    appendDiagnostic(
-      `${error.file}: ${error.error}`,
-      "error"
-    );
-  }
-}
-
-function appendDiagnostic(
-  text,
-  className = ""
-) {
-  const paragraph = document.createElement("p");
-
-  paragraph.textContent = text;
-
-  if (className) {
-    paragraph.className = className;
-  }
-
-  elements.diagnostics.append(paragraph);
-}
+/*
+ * Keep the remainder of your current app.js functions unchanged:
+ *
+ * renderResults
+ * appendBadgeCell
+ * createVerificationBadge
+ * renderZoneSummary
+ * handleResultClick
+ * openItemDetails
+ * appendQuarantineWarning
+ * appendResearchSection
+ * appendExpandableSection
+ * appendQuickField
+ * combineValues
+ * closeItemDetails
+ * handleDialogBackdropClick
+ * appendCell
+ * updateCounts
+ * renderDiagnostics
+ * appendDiagnostic
+ * updateStatus
+ * displayFallbackError
+ *
+ * Replace resetFilters with the version below.
+ */
 
 function resetFilters() {
   elements.search.value = "";
@@ -1352,6 +637,8 @@ function resetFilters() {
   elements.questItem.value = "";
   elements.inventoryOnly.value = "";
   elements.effectPresent.value = "";
+  elements.effectType.value = "";
+  elements.focusEffect.value = "";
   elements.effectTransfer.value = "";
   elements.verification.value = "";
   elements.auditAction.value = "";
@@ -1360,26 +647,6 @@ function resetFilters() {
   elements.approvedOnly.checked = false;
   elements.statMode.value = "all";
 
+  updateFocusFilterAvailability();
   clearStatFilters();
-}
-
-function updateStatus(
-  message,
-  statusType = ""
-) {
-  elements.status.textContent = message;
-  elements.status.className = "status";
-
-  if (statusType) {
-    elements.status.classList.add(statusType);
-  }
-}
-
-function displayFallbackError(message) {
-  const errorBox = document.createElement("p");
-
-  errorBox.className = "fallback-error";
-  errorBox.textContent = message;
-
-  document.body.prepend(errorBox);
 }
