@@ -308,6 +308,11 @@ export function createFilterOptions(records) {
       "zone"
     ),
 
+    sourceNpcs: getUniqueLogicalValues(
+      records,
+      "sourceNpc"
+    ),
+
     categories: getUniqueLogicalValues(
       records,
       "itemCategory"
@@ -382,6 +387,13 @@ export function filterRecords(records, filters) {
     if (
       filters.zone &&
       getField(record, "zone") !== filters.zone
+    ) {
+      return false;
+    }
+
+    if (
+      filters.sourceNpc &&
+      getField(record, "sourceNpc") !== filters.sourceNpc
     ) {
       return false;
     }
@@ -578,6 +590,321 @@ export function filterRecords(records, filters) {
 
     return true;
   });
+}
+
+/*
+ * Build faceted filter options.
+ *
+ * Each facet is calculated from records matching every active filter except
+ * the facet currently being rebuilt. This keeps dropdowns relevant while
+ * preserving the user's current choice, even when that choice has zero
+ * matches after another filter changes.
+ */
+export function createConditionalFilterOptions(
+  records,
+  filters
+) {
+  return {
+    continents: countLogicalValues(
+      getFacetRecords(records, filters, ["continent"]),
+      "continent"
+    ),
+
+    zones: countLogicalValues(
+      getFacetRecords(records, filters, ["zone"]),
+      "zone"
+    ),
+
+    sourceNpcs: countLogicalValues(
+      getFacetRecords(records, filters, ["sourceNpc"]),
+      "sourceNpc"
+    ),
+
+    categories: countLogicalValues(
+      getFacetRecords(records, filters, ["category"]),
+      "itemCategory"
+    ),
+
+    slots: countMultiValues(
+      getFacetRecords(records, filters, ["slot"]),
+      record => getField(record, "slot")
+    ),
+
+    classes: countCompatibilityValues(
+      getFacetRecords(records, filters, ["className"]),
+      getPreferredClasses
+    ),
+
+    races: countCompatibilityValues(
+      getFacetRecords(records, filters, ["race"]),
+      getPreferredRaces
+    ),
+
+    effectTypes: countDerivedValues(
+      getFacetRecords(records, filters, ["effectType"]),
+      getRecordEffectTypes
+    ),
+
+    focusEffects: countDerivedValues(
+      getFacetRecords(records, filters, ["focusEffect"]),
+      getRecordFocusEffects
+    ),
+
+    effectTransferValues: countLogicalValues(
+      getFacetRecords(
+        records,
+        filters,
+        ["effectTransferValue"]
+      ),
+      "effectTransferValue"
+    ),
+
+    verificationStatuses: countLogicalValues(
+      getFacetRecords(records, filters, ["verification"]),
+      "verificationStatus"
+    ),
+
+    auditActions: countLogicalValues(
+      getFacetRecords(records, filters, ["auditAction"]),
+      "auditAction"
+    ),
+
+    confidenceLevels: countLogicalValues(
+      getFacetRecords(records, filters, ["confidence"]),
+      "confidence"
+    ),
+
+    targetPriorities: countLogicalValues(
+      getFacetRecords(records, filters, ["targetPriority"]),
+      "targetPriority"
+    ),
+
+    stats: countDerivedValues(
+      getFacetRecords(records, filters, ["stats"]),
+      getRecordStats
+    ),
+
+    booleanCounts: {
+      magic: countBooleanValues(
+        getFacetRecords(records, filters, ["magic"]),
+        "magic"
+      ),
+
+      lore: countBooleanValues(
+        getFacetRecords(records, filters, ["lore"]),
+        "lore"
+      ),
+
+      noDrop: countBooleanValues(
+        getFacetRecords(records, filters, ["noDrop"]),
+        "noDrop"
+      ),
+
+      questItem: countBooleanValues(
+        getFacetRecords(records, filters, ["questItem"]),
+        "questItem"
+      ),
+
+      inventoryOnly: countBooleanValues(
+        getFacetRecords(records, filters, ["inventoryOnly"]),
+        "inventoryOnly"
+      ),
+
+      effectPresent: countEffectPresenceValues(
+        getFacetRecords(
+          records,
+          filters,
+          ["effectPresent"]
+        )
+      )
+          },
+
+    npcLevelRange: getAvailableNpcLevelRange(
+      getFacetRecords(
+        records,
+        filters,
+        ["minimumNpcLevel", "maximumNpcLevel"]
+      )
+    )
+  };
+}
+
+export function getAvailableNpcLevelRange(records) {
+  const levels = [];
+
+  for (const record of records) {
+    const range = parseLevelRange(
+      getPreferredNpcLevel(record)
+    );
+
+    if (range.minimum !== null) {
+      levels.push(range.minimum);
+    }
+
+    if (range.maximum !== null) {
+      levels.push(range.maximum);
+    }
+  }
+
+  if (levels.length === 0) {
+    return {
+      minimum: null,
+      maximum: null,
+      recordCount: 0
+    };
+  }
+
+  return {
+    minimum: Math.min(...levels),
+    maximum: Math.max(...levels),
+    recordCount: records.length
+  };
+}
+
+function getFacetRecords(
+  records,
+  filters,
+  excludedFilterNames
+) {
+  const facetFilters = {
+    ...filters,
+    stats: [...(filters.stats ?? [])]
+  };
+
+  for (const filterName of excludedFilterNames) {
+    if (filterName === "stats") {
+      facetFilters.stats = [];
+      continue;
+    }
+
+    if (filterName === "approvedOnly") {
+      facetFilters.approvedOnly = false;
+      continue;
+    }
+
+    facetFilters[filterName] = "";
+  }
+
+  return filterRecords(records, facetFilters);
+}
+
+function countLogicalValues(
+  records,
+  logicalFieldName
+) {
+  return countValues(
+    records
+      .map(record =>
+        getField(record, logicalFieldName)
+      )
+      .filter(Boolean)
+  );
+}
+
+function countMultiValues(records, getter) {
+  return countValues(
+    records.flatMap(record =>
+      splitList(getter(record))
+    )
+  );
+}
+
+function countCompatibilityValues(records, getter) {
+  const values = [];
+
+  for (const record of records) {
+    for (const value of splitList(getter(record))) {
+      const normalized = normalizeLower(value);
+
+      if (
+        normalized !== "all" &&
+        normalized !== "all classes" &&
+        normalized !== "all races" &&
+        !normalized.startsWith("all except")
+      ) {
+        values.push(value);
+      }
+    }
+  }
+
+  return countValues(values);
+}
+
+function countDerivedValues(records, getter) {
+  return countValues(
+    records.flatMap(record => getter(record))
+  );
+}
+
+function countValues(values) {
+  const counts = new Map();
+
+  for (const rawValue of values) {
+    const value = normalizeText(rawValue);
+
+    if (!value) {
+      continue;
+    }
+
+    counts.set(
+      value,
+      (counts.get(value) ?? 0) + 1
+    );
+  }
+
+  return [...counts.entries()]
+    .map(([value, count]) => ({
+      value,
+      count
+    }))
+    .sort((left, right) =>
+      naturalCompare(left.value, right.value)
+    );
+}
+
+function countBooleanValues(
+  records,
+  logicalFieldName
+) {
+  const counts = {
+    yes: 0,
+    no: 0,
+    unknown: 0
+  };
+
+  for (const record of records) {
+    const value = getBooleanValue(
+      record,
+      logicalFieldName
+    );
+
+    if (value === true) {
+      counts.yes += 1;
+    } else if (value === false) {
+      counts.no += 1;
+    } else {
+      counts.unknown += 1;
+    }
+  }
+
+  return counts;
+}
+
+function countEffectPresenceValues(records) {
+  const counts = {
+    yes: 0,
+    no: 0
+  };
+
+  for (const record of records) {
+    if (getEffectText(record)) {
+      counts.yes += 1;
+    } else {
+      counts.no += 1;
+    }
+  }
+
+  return counts;
 }
 
 export function getRecordStats(record) {
