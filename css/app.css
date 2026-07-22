@@ -786,3 +786,35 @@ footer {
     text-align: left;
   }
 }
+
+/* Conditional/faceted filter states */
+
+.filter-hint {
+  grid-column: 1 / -1;
+  margin: -0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.level-range-hint {
+  border-left: 3px solid var(--border);
+  padding-left: 0.75rem;
+}
+
+select:disabled,
+input:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.stat-option.is-unavailable {
+  border-style: dashed;
+  opacity: 0.62;
+}
+
+.stat-option.is-unavailable:has(input:checked) {
+  border-color: var(--warning);
+  background: rgb(217 164 65 / 10%);
+  color: var(--warning);
+  opacity: 1;
+}
