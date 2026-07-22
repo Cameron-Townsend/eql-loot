@@ -1,21 +1,20 @@
 "use strict";
 
 import {
+  getBooleanValue,
+  getField,
   getPreferredClasses,
   getPreferredNpcLevel,
   getPreferredRaces,
   getPreferredStats,
   isApproved,
+  isEqlConfirmed,
   naturalCompare,
   normalizeLower,
-  normalizeText
+  normalizeText,
+  parseLevelRange
 } from "./database.js";
 
-/*
- * Canonical stat names and the forms that may appear in CSV fields.
- *
- * The canonical value is what appears in the filter interface.
- */
 const STAT_DEFINITIONS = [
   {
     name: "AC",
@@ -149,8 +148,8 @@ const STAT_DEFINITIONS = [
     name: "MANA REGEN",
     patterns: [
       /\bMANA REGEN(?:ERATION)?\b/i,
-      /\bFT\b/i,
-      /\bFLOWING THOUGHT\b/i
+      /\bFLOWING THOUGHT\b/i,
+      /\bFT\s*\d+/i
     ]
   },
   {
@@ -182,20 +181,59 @@ const STAT_DEFINITIONS = [
 
 export function createFilterOptions(records) {
   return {
-    continents: getUniqueValues(records, "continent"),
-    zones: getUniqueValues(records, "zone"),
-    categories: getUniqueValues(records, "item_category"),
-    slots: getMultiValues(records, "slot"),
-    classes: getPreferredClassValues(records),
-
-    verificationStatuses: getUniqueValues(
+    continents: getUniqueLogicalValues(
       records,
-      "eql_verification_status"
+      "continent"
     ),
 
-    confidenceLevels: getUniqueValues(
+    zones: getUniqueLogicalValues(
       records,
-      "data_confidence"
+      "zone"
+    ),
+
+    categories: getUniqueLogicalValues(
+      records,
+      "itemCategory"
+    ),
+
+    slots: getLogicalMultiValues(
+      records,
+      "slot"
+    ),
+
+    classes: getPreferredMultiValues(
+      records,
+      getPreferredClasses
+    ),
+
+    races: getPreferredMultiValues(
+      records,
+      getPreferredRaces
+    ),
+
+    effectTransferValues: getUniqueLogicalValues(
+      records,
+      "effectTransferValue"
+    ),
+
+    verificationStatuses: getUniqueLogicalValues(
+      records,
+      "verificationStatus"
+    ),
+
+    auditActions: getUniqueLogicalValues(
+      records,
+      "auditAction"
+    ),
+
+    confidenceLevels: getUniqueLogicalValues(
+      records,
+      "confidence"
+    ),
+
+    targetPriorities: getUniqueLogicalValues(
+      records,
+      "targetPriority"
     ),
 
     stats: getAvailableStats(records)
@@ -204,11 +242,6 @@ export function createFilterOptions(records) {
 
 export function filterRecords(records, filters) {
   const searchText = normalizeLower(filters.search);
-  const selectedClass = normalizeLower(filters.className);
-
-  const selectedStats = Array.isArray(filters.stats)
-    ? filters.stats
-    : [];
 
   return records.filter(record => {
     if (
@@ -220,58 +253,177 @@ export function filterRecords(records, filters) {
 
     if (
       filters.continent &&
-      record.continent !== filters.continent
+      getField(record, "continent") !== filters.continent
     ) {
       return false;
     }
 
     if (
       filters.zone &&
-      record.zone !== filters.zone
+      getField(record, "zone") !== filters.zone
     ) {
       return false;
     }
 
     if (
       filters.category &&
-      record.item_category !== filters.category
+      getField(record, "itemCategory") !== filters.category
     ) {
       return false;
     }
 
     if (
       filters.slot &&
-      !containsListValue(record.slot, filters.slot)
+      !containsListValue(
+        getField(record, "slot"),
+        filters.slot
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      filters.className &&
+      !matchesCompatibilityField(
+        getPreferredClasses(record),
+        filters.className
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      filters.race &&
+      !matchesCompatibilityField(
+        getPreferredRaces(record),
+        filters.race
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      !matchesNpcLevelRange(
+        record,
+        filters.minimumNpcLevel,
+        filters.maximumNpcLevel
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      !matchesBooleanFilter(
+        record,
+        "magic",
+        filters.magic
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      !matchesBooleanFilter(
+        record,
+        "lore",
+        filters.lore
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      !matchesBooleanFilter(
+        record,
+        "noDrop",
+        filters.noDrop
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      !matchesBooleanFilter(
+        record,
+        "questItem",
+        filters.questItem
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      !matchesBooleanFilter(
+        record,
+        "inventoryOnly",
+        filters.inventoryOnly
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      !matchesEffectPresence(
+        record,
+        filters.effectPresent
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      filters.effectTransferValue &&
+      getField(record, "effectTransferValue") !==
+        filters.effectTransferValue
+    ) {
+      return false;
+    }
+
+    if (
+      filters.verification === "__confirmed_only__" &&
+      !isEqlConfirmed(record)
     ) {
       return false;
     }
 
     if (
       filters.verification &&
-      record.eql_verification_status !== filters.verification
+      filters.verification !== "__confirmed_only__" &&
+      getField(record, "verificationStatus") !==
+        filters.verification
+    ) {
+      return false;
+    }
+
+    if (
+      filters.auditAction &&
+      getField(record, "auditAction") !==
+        filters.auditAction
     ) {
       return false;
     }
 
     if (
       filters.confidence &&
-      record.data_confidence !== filters.confidence
+      getField(record, "confidence") !==
+        filters.confidence
     ) {
       return false;
     }
 
     if (
-      selectedClass &&
-      !recordMatchesClass(record, selectedClass)
+      filters.targetPriority &&
+      getField(record, "targetPriority") !==
+        filters.targetPriority
     ) {
       return false;
     }
 
     if (
-      selectedStats.length > 0 &&
+      filters.stats.length > 0 &&
       !recordMatchesStats(
         record,
-        selectedStats,
+        filters.stats,
         filters.statMode
       )
     ) {
@@ -290,7 +442,11 @@ export function filterRecords(records, filters) {
 }
 
 export function getRecordStats(record) {
-  const statText = buildStatText(record);
+  const statText = [
+    getField(record, "statsEql"),
+    getField(record, "statsRaw"),
+    getField(record, "statsClassic")
+  ].join(" ");
 
   return STAT_DEFINITIONS
     .filter(definition =>
@@ -306,7 +462,7 @@ export function getZoneSummary(records) {
 
   for (const record of records) {
     const zone =
-      normalizeText(record.zone) || "Unknown zone";
+      getField(record, "zone") || "Unknown zone";
 
     if (!zoneMap.has(zone)) {
       zoneMap.set(zone, {
@@ -321,14 +477,13 @@ export function getZoneSummary(records) {
 
     summary.itemCount += 1;
 
-    for (const slot of splitList(record.slot)) {
+    for (const slot of splitList(
+      getField(record, "slot")
+    )) {
       summary.slots.add(slot);
     }
 
-    if (
-      normalizeLower(record.eql_verification_status)
-        .startsWith("eql confirmed")
-    ) {
+    if (isEqlConfirmed(record)) {
       summary.confirmedCount += 1;
     }
   }
@@ -349,16 +504,104 @@ export function getZoneSummary(records) {
     });
 }
 
-function getAvailableStats(records) {
-  const stats = new Set();
+function matchesNpcLevelRange(
+  record,
+  requestedMinimum,
+  requestedMaximum
+) {
+  const requestedMin = parseOptionalNumber(
+    requestedMinimum
+  );
 
-  for (const record of records) {
-    for (const stat of getRecordStats(record)) {
-      stats.add(stat);
-    }
+  const requestedMax = parseOptionalNumber(
+    requestedMaximum
+  );
+
+  if (
+    requestedMin === null &&
+    requestedMax === null
+  ) {
+    return true;
   }
 
-  return [...stats].sort(statSort);
+  const recordRange = parseLevelRange(
+    getPreferredNpcLevel(record)
+  );
+
+  if (
+    recordRange.minimum === null &&
+    recordRange.maximum === null
+  ) {
+    return false;
+  }
+
+  if (
+    requestedMin !== null &&
+    recordRange.maximum < requestedMin
+  ) {
+    return false;
+  }
+
+  if (
+    requestedMax !== null &&
+    recordRange.minimum > requestedMax
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function matchesBooleanFilter(
+  record,
+  logicalFieldName,
+  filterValue
+) {
+  if (!filterValue) {
+    return true;
+  }
+
+  const booleanValue = getBooleanValue(
+    record,
+    logicalFieldName
+  );
+
+  if (filterValue === "yes") {
+    return booleanValue === true;
+  }
+
+  if (filterValue === "no") {
+    return booleanValue === false;
+  }
+
+  if (filterValue === "unknown") {
+    return booleanValue === null;
+  }
+
+  return true;
+}
+
+function matchesEffectPresence(record, filterValue) {
+  if (!filterValue) {
+    return true;
+  }
+
+  const effectText = [
+    getField(record, "procClickFocus"),
+    getField(record, "effectDescription")
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  if (filterValue === "yes") {
+    return effectText !== "";
+  }
+
+  if (filterValue === "no") {
+    return effectText === "";
+  }
+
+  return true;
 }
 
 function recordMatchesStats(
@@ -366,7 +609,9 @@ function recordMatchesStats(
   selectedStats,
   statMode
 ) {
-  const recordStats = new Set(getRecordStats(record));
+  const recordStats = new Set(
+    getRecordStats(record)
+  );
 
   if (statMode === "any") {
     return selectedStats.some(stat =>
@@ -379,115 +624,118 @@ function recordMatchesStats(
   );
 }
 
-function buildStatText(record) {
-  return [
-    record.stats_eql,
-    record.stats_classic,
-    record.stats_raw,
-    record.proc_click_focus,
-    record.effect_name,
-    record.effect_description,
-    record.general_value_notes
-  ]
-    .map(normalizeText)
-    .join(" ");
-}
-
 function buildSearchText(record) {
   return [
-    record.item_name,
-    record.item_category,
-    record.zone,
-    record.continent,
-    record.slot,
-    record.source_npc,
-    record.source_npc_class,
-    record.source_npc_race_type,
-    record.proc_click_focus,
+    getField(record, "itemName"),
+    getField(record, "continent"),
+    getField(record, "zone"),
+    getField(record, "itemCategory"),
+    getField(record, "slot"),
     getPreferredStats(record),
     getPreferredClasses(record),
     getPreferredRaces(record),
+    getField(record, "sourceNpc"),
     getPreferredNpcLevel(record),
-    record.best_for_classes,
-    record.best_for_archetypes,
-    record.general_value_notes,
-    record.personal_build_notes,
-    record.drop_notes,
-    record.eql_changes_summary,
-    record.eql_verification_notes
+    getField(record, "procClickFocus"),
+    getField(record, "dropFrequency"),
+    getField(record, "generalValueNotes"),
+    getField(record, "spawnLocation"),
+    getField(record, "dropNotes"),
+    getField(record, "eqlChangesSummary"),
+    getField(record, "eqlVerificationNotes"),
+    getField(record, "researchNotes")
   ]
     .map(normalizeLower)
     .join(" ");
 }
 
-function getUniqueValues(records, fieldName) {
+function getUniqueLogicalValues(
+  records,
+  logicalFieldName
+) {
   return [...new Set(
     records
       .map(record =>
-        normalizeText(record[fieldName])
+        getField(record, logicalFieldName)
       )
       .filter(Boolean)
   )].sort(naturalCompare);
 }
 
-function getMultiValues(records, fieldName) {
+function getLogicalMultiValues(
+  records,
+  logicalFieldName
+) {
   return [...new Set(
     records.flatMap(record =>
-      splitList(record[fieldName])
+      splitList(
+        getField(record, logicalFieldName)
+      )
     )
   )].sort(naturalCompare);
 }
 
-function getPreferredClassValues(records) {
-  const classValues = new Set();
+function getPreferredMultiValues(
+  records,
+  getter
+) {
+  const values = new Set();
 
   for (const record of records) {
-    const classText = getPreferredClasses(record);
-
-    for (const value of splitList(classText)) {
+    for (const value of splitList(getter(record))) {
       const normalized = normalizeLower(value);
 
       if (
         normalized !== "all" &&
         !normalized.startsWith("all except")
       ) {
-        classValues.add(value);
+        values.add(value);
       }
     }
   }
 
-  return [...classValues].sort(naturalCompare);
+  return [...values].sort(naturalCompare);
 }
 
-function recordMatchesClass(record, selectedClass) {
-  const classText = normalizeLower(
-    getPreferredClasses(record)
-  );
+function matchesCompatibilityField(
+  fieldValue,
+  selectedValue
+) {
+  const normalizedField = normalizeLower(fieldValue);
+  const normalizedSelection =
+    normalizeLower(selectedValue);
 
-  if (!classText) {
+  if (!normalizedField) {
     return false;
   }
 
-  if (classText === "all") {
+  if (
+    normalizedField === "all" ||
+    normalizedField === "all races" ||
+    normalizedField === "all classes"
+  ) {
     return true;
   }
 
-  if (classText.startsWith("all except")) {
-    const exclusions = classText
-      .replace("all except", "")
-      .split(/[;,/|]+/)
-      .map(value => value.trim())
-      .filter(Boolean);
+  if (normalizedField.startsWith("all except")) {
+    const exclusions = splitList(
+      normalizedField.replace("all except", "")
+    ).map(normalizeLower);
 
-    return !exclusions.includes(selectedClass);
+    return !exclusions.includes(
+      normalizedSelection
+    );
   }
 
-  return splitList(classText)
+  return splitList(normalizedField)
     .map(normalizeLower)
-    .includes(selectedClass);
+    .includes(normalizedSelection);
 }
 
-function containsListValue(fieldValue, selectedValue) {
+function containsListValue(
+  fieldValue,
+  selectedValue
+) {
   const normalizedSelection =
     normalizeLower(selectedValue);
 
@@ -503,13 +751,38 @@ function splitList(value) {
     .filter(Boolean);
 }
 
-function statSort(left, right) {
-  const order = STAT_DEFINITIONS.map(
+function getAvailableStats(records) {
+  const stats = new Set();
+
+  for (const record of records) {
+    for (const stat of getRecordStats(record)) {
+      stats.add(stat);
+    }
+  }
+
+  const canonicalOrder = STAT_DEFINITIONS.map(
     definition => definition.name
   );
 
-  return (
-    order.indexOf(left) -
-    order.indexOf(right)
+  return [...stats].sort(
+    (left, right) =>
+      canonicalOrder.indexOf(left) -
+      canonicalOrder.indexOf(right)
   );
+}
+
+function parseOptionalNumber(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed)
+    ? parsed
+    : null;
 }
