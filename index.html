@@ -10,7 +10,7 @@
 
   <meta
     name="description"
-    content="Search and compare researched EverQuest Legends loot records by zone, class, race, slot, stats, source, and EQL verification."
+    content="Search and compare researched EverQuest Legends loot records by zone, class, race, slot, stats, source, effects, and EQL verification."
   >
 
   <title>EverQuest Legends Loot Explorer</title>
@@ -210,12 +210,28 @@
         </label>
 
         <label>
-          Proc, click, or focus
+          Proc, click, or focus present
 
           <select id="effect-present-filter">
             <option value="">Any</option>
             <option value="yes">Effect present</option>
             <option value="no">No effect listed</option>
+          </select>
+        </label>
+
+        <label>
+          Effect type
+
+          <select id="effect-type-filter">
+            <option value="">All effect types</option>
+          </select>
+        </label>
+
+        <label>
+          Focus-effect family
+
+          <select id="focus-effect-filter">
+            <option value="">All focus effects</option>
           </select>
         </label>
 
