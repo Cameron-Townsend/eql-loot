@@ -7,11 +7,16 @@ import {
 
 import {
   buildDatabase,
+  getField,
   getPreferredClasses,
   getPreferredNpcLevel,
   getPreferredRaces,
+  getPreferredSourceLinks,
   getPreferredStats,
+  getVerificationBadgeClass,
+  hasValue,
   isApproved,
+  isQuarantined,
   naturalCompare
 } from "./database.js";
 
@@ -33,7 +38,10 @@ const state = {
 
 const elements = {};
 
-document.addEventListener("DOMContentLoaded", initialize);
+document.addEventListener(
+  "DOMContentLoaded",
+  initialize
+);
 
 async function initialize() {
   try {
@@ -56,7 +64,7 @@ async function initialize() {
 
     state.recordsById = new Map(
       state.records.map(record => [
-        record.record_id,
+        getField(record, "recordId"),
         record
       ])
     );
@@ -122,11 +130,47 @@ function captureElements() {
   elements.className =
     document.querySelector("#class-filter");
 
+  elements.race =
+    document.querySelector("#race-filter");
+
+  elements.minimumNpcLevel =
+    document.querySelector("#minimum-level-filter");
+
+  elements.maximumNpcLevel =
+    document.querySelector("#maximum-level-filter");
+
+  elements.magic =
+    document.querySelector("#magic-filter");
+
+  elements.lore =
+    document.querySelector("#lore-filter");
+
+  elements.noDrop =
+    document.querySelector("#no-drop-filter");
+
+  elements.questItem =
+    document.querySelector("#quest-item-filter");
+
+  elements.inventoryOnly =
+    document.querySelector("#inventory-only-filter");
+
+  elements.effectPresent =
+    document.querySelector("#effect-present-filter");
+
+  elements.effectTransfer =
+    document.querySelector("#effect-transfer-filter");
+
   elements.verification =
     document.querySelector("#verification-filter");
 
+  elements.auditAction =
+    document.querySelector("#audit-action-filter");
+
   elements.confidence =
     document.querySelector("#confidence-filter");
+
+  elements.targetPriority =
+    document.querySelector("#target-priority-filter");
 
   elements.approvedOnly =
     document.querySelector("#approved-filter");
@@ -189,8 +233,20 @@ function bindEvents() {
     elements.category,
     elements.slot,
     elements.className,
+    elements.race,
+    elements.minimumNpcLevel,
+    elements.maximumNpcLevel,
+    elements.magic,
+    elements.lore,
+    elements.noDrop,
+    elements.questItem,
+    elements.inventoryOnly,
+    elements.effectPresent,
+    elements.effectTransfer,
     elements.verification,
+    elements.auditAction,
     elements.confidence,
+    elements.targetPriority,
     elements.approvedOnly,
     elements.statMode
   ];
@@ -270,9 +326,25 @@ function populateFilters(options) {
   );
 
   populateSelect(
-    elements.verification,
-    options.verificationStatuses,
-    "All verification statuses"
+    elements.race,
+    options.races,
+    "All races"
+  );
+
+  populateSelect(
+    elements.effectTransfer,
+    options.effectTransferValues,
+    "All values"
+  );
+
+  populateVerificationSelect(
+    options.verificationStatuses
+  );
+
+  populateSelect(
+    elements.auditAction,
+    options.auditActions,
+    "All audit actions"
   );
 
   populateSelect(
@@ -280,26 +352,71 @@ function populateFilters(options) {
     options.confidenceLevels,
     "All confidence levels"
   );
+
+  populateSelect(
+    elements.targetPriority,
+    options.targetPriorities,
+    "All priorities"
+  );
 }
 
-function populateSelect(select, values, defaultLabel) {
+function populateVerificationSelect(statuses) {
+  elements.verification.replaceChildren();
+
+  appendOption(
+    elements.verification,
+    "",
+    "All statuses"
+  );
+
+  appendOption(
+    elements.verification,
+    "__confirmed_only__",
+    "EQL Confirmed only"
+  );
+
+  for (const status of statuses) {
+    appendOption(
+      elements.verification,
+      status,
+      status
+    );
+  }
+}
+
+function populateSelect(
+  select,
+  values,
+  defaultLabel
+) {
   select.replaceChildren();
 
-  const defaultOption = document.createElement("option");
-
-  defaultOption.value = "";
-  defaultOption.textContent = defaultLabel;
-
-  select.append(defaultOption);
+  appendOption(
+    select,
+    "",
+    defaultLabel
+  );
 
   for (const value of values) {
-    const option = document.createElement("option");
-
-    option.value = value;
-    option.textContent = value;
-
-    select.append(option);
+    appendOption(
+      select,
+      value,
+      value
+    );
   }
+}
+
+function appendOption(
+  select,
+  value,
+  label
+) {
+  const option = document.createElement("option");
+
+  option.value = value;
+  option.textContent = label;
+
+  select.append(option);
 }
 
 function renderStatOptions(stats) {
@@ -310,7 +427,7 @@ function renderStatOptions(stats) {
 
     message.className = "muted-message";
     message.textContent =
-      "No recognized stat values were found in the database.";
+      "No recognized stat values were found.";
 
     elements.statOptions.append(message);
     return;
@@ -375,9 +492,30 @@ function applyCurrentFilters() {
     category: elements.category.value,
     slot: elements.slot.value,
     className: elements.className.value,
+    race: elements.race.value,
+
+    minimumNpcLevel:
+      elements.minimumNpcLevel.value,
+
+    maximumNpcLevel:
+      elements.maximumNpcLevel.value,
+
+    magic: elements.magic.value,
+    lore: elements.lore.value,
+    noDrop: elements.noDrop.value,
+    questItem: elements.questItem.value,
+    inventoryOnly: elements.inventoryOnly.value,
+    effectPresent: elements.effectPresent.value,
+
+    effectTransferValue:
+      elements.effectTransfer.value,
+
     verification: elements.verification.value,
+    auditAction: elements.auditAction.value,
     confidence: elements.confidence.value,
+    targetPriority: elements.targetPriority.value,
     approvedOnly: elements.approvedOnly.checked,
+
     stats: [...state.selectedStats],
     statMode: elements.statMode.value
   };
@@ -389,8 +527,8 @@ function applyCurrentFilters() {
 
   state.filteredRecords.sort((left, right) => {
     const zoneComparison = naturalCompare(
-      left.zone,
-      right.zone
+      getField(left, "zone"),
+      getField(right, "zone")
     );
 
     if (zoneComparison !== 0) {
@@ -398,8 +536,8 @@ function applyCurrentFilters() {
     }
 
     return naturalCompare(
-      left.item_name,
-      right.item_name
+      getField(left, "itemName"),
+      getField(right, "itemName")
     );
   });
 
@@ -424,23 +562,62 @@ function renderResults() {
 
     itemButton.type = "button";
     itemButton.className = "item-link-button";
-    itemButton.dataset.recordId = record.record_id;
+
+    itemButton.dataset.recordId =
+      getField(record, "recordId");
+
     itemButton.textContent =
-      record.item_name || "Unnamed item";
+      getField(record, "itemName") ||
+      "Unnamed item";
 
     itemCell.className = "item-name";
     itemCell.append(itemButton);
     row.append(itemCell);
 
-    appendCell(row, record.slot);
-    appendCell(row, record.zone);
-    appendCell(row, record.source_npc);
-    appendCell(row, getPreferredNpcLevel(record));
-    appendCell(row, getPreferredClasses(record));
-    appendCell(row, getPreferredStats(record));
-    appendCell(row, record.eql_verification_status);
-    appendCell(row, record.data_confidence);
-    appendCell(row, isApproved(record) ? "Yes" : "No");
+    appendCell(
+      row,
+      getField(record, "zone")
+    );
+
+    appendCell(
+      row,
+      getField(record, "slot")
+    );
+
+    appendCell(
+      row,
+      getPreferredStats(record)
+    );
+
+    appendCell(
+      row,
+      getPreferredClasses(record)
+    );
+
+    appendCell(
+      row,
+      getField(record, "sourceNpc")
+    );
+
+    appendCell(
+      row,
+      getPreferredNpcLevel(record)
+    );
+
+    appendCell(
+      row,
+      getField(record, "procClickFocus")
+    );
+
+    appendBadgeCell(
+      row,
+      getField(record, "verificationStatus")
+    );
+
+    appendCell(
+      row,
+      getField(record, "confidence")
+    );
 
     elements.resultsBody.append(row);
   }
@@ -456,6 +633,28 @@ function renderResults() {
     row.append(cell);
     elements.resultsBody.append(row);
   }
+}
+
+function appendBadgeCell(row, status) {
+  const cell = document.createElement("td");
+  const badge = createVerificationBadge(status);
+
+  cell.append(badge);
+  row.append(cell);
+}
+
+function createVerificationBadge(status) {
+  const badge = document.createElement("span");
+
+  badge.className = [
+    "verification-badge",
+    getVerificationBadgeClass(status)
+  ].join(" ");
+
+  badge.textContent =
+    status || "Status not recorded";
+
+  return badge;
 }
 
 function renderZoneSummary() {
@@ -509,245 +708,456 @@ function handleResultClick(event) {
 }
 
 function openItemDetails(record) {
-  const preferredStats =
-    getPreferredStats(record) || "No stats listed";
+  const itemName =
+    getField(record, "itemName") ||
+    "Unnamed item";
 
-  const preferredClasses =
-    getPreferredClasses(record) || "Not listed";
+  const category =
+    getField(record, "itemCategory");
 
-  const preferredRaces =
-    getPreferredRaces(record) || "Not listed";
+  const slot =
+    getField(record, "slot");
 
-  const preferredNpcLevel =
-    getPreferredNpcLevel(record) || "Unknown";
-
-  elements.detailItemName.textContent =
-    record.item_name || "Unnamed item";
+  elements.detailItemName.textContent = itemName;
 
   elements.detailItemSubtitle.textContent = [
-    record.item_category,
-    record.slot,
-    record.zone
+    slot,
+    category,
+    getField(record, "zone")
   ]
     .filter(Boolean)
     .join(" • ");
 
   elements.itemDetailContent.replaceChildren();
 
-  const summaryCard = document.createElement("section");
-  summaryCard.className = "quick-detail-card";
+  const statusRow = document.createElement("div");
+  statusRow.className = "popup-status-row";
+
+  statusRow.append(
+    createVerificationBadge(
+      getField(record, "verificationStatus")
+    )
+  );
+
+  const confidence =
+    getField(record, "confidence");
+
+  if (confidence) {
+    const confidenceBadge =
+      document.createElement("span");
+
+    confidenceBadge.className =
+      "confidence-badge";
+
+    confidenceBadge.textContent =
+      `${confidence} confidence`;
+
+    statusRow.append(confidenceBadge);
+  }
+
+  elements.itemDetailContent.append(statusRow);
+
+  if (isQuarantined(record)) {
+    appendQuarantineWarning(
+      elements.itemDetailContent
+    );
+  }
+
+  const quickCard =
+    document.createElement("section");
+
+  quickCard.className = "quick-detail-card";
 
   appendQuickField(
-    summaryCard,
-    "Stats",
-    preferredStats,
+    quickCard,
+    "Slot and category",
+    combineValues(slot, category)
+  );
+
+  appendQuickField(
+    quickCard,
+    "EQL stats",
+    getPreferredStats(record),
     "quick-field-wide"
   );
 
   appendQuickField(
-    summaryCard,
-    "Classes",
-    preferredClasses
+    quickCard,
+    "EQL classes",
+    getPreferredClasses(record)
   );
 
   appendQuickField(
-    summaryCard,
-    "Races",
-    preferredRaces
+    quickCard,
+    "EQL races",
+    getPreferredRaces(record)
   );
 
   appendQuickField(
-    summaryCard,
-    "Zone",
-    record.zone
+    quickCard,
+    "Source NPC",
+    getField(record, "sourceNpc")
   );
 
   appendQuickField(
-    summaryCard,
-    "Dropped by",
-    record.source_npc
-  );
-
-  appendQuickField(
-    summaryCard,
+    quickCard,
     "NPC level",
-    preferredNpcLevel
+    getPreferredNpcLevel(record)
   );
 
   appendQuickField(
-    summaryCard,
+    quickCard,
+    "Zone",
+    getField(record, "zone")
+  );
+
+  appendQuickField(
+    quickCard,
+    "Spawn location",
+    getField(record, "spawnLocation")
+  );
+
+  appendQuickField(
+    quickCard,
+    "Proc, click, or focus",
+    combineValues(
+      getField(record, "procClickFocus"),
+      getField(record, "effectDescription")
+    ),
+    "quick-field-wide"
+  );
+
+  appendQuickField(
+    quickCard,
     "Drop frequency",
-    firstPopulatedValue(
-      record.drop_frequency,
-      record.reported_drop_rate
+    combineValues(
+      getField(record, "dropFrequency"),
+      getField(record, "dropRateReported")
     )
   );
 
   appendQuickField(
-    summaryCard,
-    "Respawn",
-    record.respawn_timer
-  );
-
-  appendQuickField(
-    summaryCard,
-    "Effect",
-    firstPopulatedValue(
-      record.proc_click_focus,
-      record.effect_name,
-      record.effect_description
-    ),
+    quickCard,
+    "General value",
+    getField(record, "generalValueNotes"),
     "quick-field-wide"
   );
 
-  appendQuickField(
-    summaryCard,
-    "Verification",
-    combineValues(
-      record.eql_verification_status,
-      record.data_confidence
-    ),
-    "quick-field-wide"
-  );
+  elements.itemDetailContent.append(quickCard);
 
-  elements.itemDetailContent.append(summaryCard);
-
-  const detailsDrawer = document.createElement("details");
-  detailsDrawer.className = "advanced-detail-drawer";
-
-  const drawerSummary = document.createElement("summary");
-  const drawerLabel = document.createElement("span");
-  const drawerHint = document.createElement("span");
-
-  drawerLabel.className = "drawer-label";
-  drawerLabel.textContent = "More details";
-
-  drawerHint.className = "drawer-hint";
-  drawerHint.textContent =
-    "Classic comparison, spawn information, notes, audit data, and sources";
-
-  drawerSummary.append(drawerLabel, drawerHint);
-  detailsDrawer.append(drawerSummary);
-
-  const drawerContent = document.createElement("div");
-  drawerContent.className = "advanced-detail-content";
-
-  detailsDrawer.append(drawerContent);
-  elements.itemDetailContent.append(detailsDrawer);
-
-  appendDetailSectionTo(
-    drawerContent,
-    "Item information",
+  appendExpandableSection(
+    elements.itemDetailContent,
+    "Drop Details",
+    "Spawn behavior, hazards, and drop information",
     [
-      ["Record ID", record.record_id],
-      ["Batch", record.batch],
-      ["Continent", record.continent],
-      ["Category", record.item_category],
-      ["Slot", record.slot],
-      ["Recognized stats", getRecordStats(record).join(", ")],
-      ["Equippable", record.equippable],
-      ["Inventory only", record.inventory_only],
-      ["Magic", record.magic],
-      ["Lore", record.lore],
-      ["No Drop", record.no_drop],
-      ["Quest item", record.quest_item],
-      ["Size", record.size],
-      ["Weight", record.weight],
-      ["Damage", record.damage],
-      ["Delay", record.delay],
-      ["Weapon skill", record.weapon_skill]
-    ]
-  );
-
-  appendDetailSectionTo(
-    drawerContent,
-    "EQL item data",
-    [
-      ["EQL stats", record.stats_eql],
-      ["EQL classes", record.classes_eql],
-      ["EQL races", record.races_eql],
-      ["Proc / click / focus", record.proc_click_focus],
-      ["Effect name", record.effect_name],
-      ["Effect description", record.effect_description]
-    ]
-  );
-
-  appendDetailSectionTo(
-    drawerContent,
-    "Classic comparison",
-    [
-      ["Classic stats", record.stats_classic],
-      ["Classic classes", record.classes_classic],
-      ["Classic races", record.races_classic],
-      ["EQL stats match", record.eql_stats_match],
-      ["EQL classes match", record.eql_classes_match],
-      ["EQL races match", record.eql_races_match],
-      ["EQL effect match", record.eql_effect_match],
-      ["EQL changes", record.eql_changes_summary]
-    ]
-  );
-
-  appendDetailSectionTo(
-    drawerContent,
-    "Spawn and drop details",
-    [
-      ["EQL NPC level", record.source_npc_level_eql],
-      ["Classic NPC level", record.source_npc_level_classic],
-      ["NPC class", record.source_npc_class],
-      ["NPC race/type", record.source_npc_race_type],
-      ["Spawn location", record.spawn_location],
-      ["Spawn type", record.spawn_type],
-      ["Placeholder", record.placeholder],
-      ["Placeholder levels", record.placeholder_level_range],
-      ["Nearby enemy levels", record.nearby_enemy_level_range],
-      ["Respawn timer", record.respawn_timer],
-      ["Drop frequency", record.drop_frequency],
-      ["Reported drop rate", record.reported_drop_rate],
-      ["Time condition", record.time_condition],
-      ["Special abilities", record.special_abilities],
-      ["Social/add risk", record.social_add_risk],
-      ["Faction consequences", record.faction_consequences],
-      ["Drop notes", record.drop_notes]
-    ]
-  );
-
-  appendDetailSectionTo(
-    drawerContent,
-    "Recommended use",
-    [
-      ["Best for classes", record.best_for_classes],
-      ["Best for archetypes", record.best_for_archetypes],
-      ["Target priority", record.target_priority],
-      ["General value", record.general_value_notes],
-      ["Personal build notes", record.personal_build_notes]
-    ]
-  );
-
-  appendDetailSectionTo(
-    drawerContent,
-    "Audit information",
-    [
-      ["Verification status", record.eql_verification_status],
-      ["Data confidence", record.data_confidence],
-      ["Audit action", record.eql_audit_action],
-      ["EQL item confirmed", record.eql_item_confirmed],
-      ["EQL NPC confirmed", record.eql_npc_confirmed],
+      ["Placeholder", getField(record, "placeholder")],
       [
-        "Drop source confirmed",
-        record.eql_drop_source_confirmed
+        "Placeholder level range",
+        getField(record, "placeholderLevelRange")
       ],
-      ["Spawn confirmed", record.eql_spawn_match],
-      ["Verification notes", record.eql_verification_notes],
-      ["Last checked", record.last_checked],
-      ["Approved", record.approved],
-      ["Revision", record.revision],
-      ["Source file", record.__sourceFile]
+      [
+        "Respawn timer",
+        getField(record, "respawnTimer")
+      ],
+      [
+        "Time condition",
+        getField(record, "timeCondition")
+      ],
+      [
+        "Nearby enemy levels",
+        getField(record, "nearbyEnemyLevelRange")
+      ],
+      [
+        "Spawn type",
+        getField(record, "spawnType")
+      ],
+      [
+        "Special abilities",
+        getField(record, "specialAbilities")
+      ],
+      [
+        "Add risk",
+        getField(record, "socialAddRisk")
+      ],
+      [
+        "Faction consequences",
+        getField(record, "factionConsequences")
+      ],
+      [
+        "Drop-rate notes",
+        combineValues(
+          getField(record, "dropRateReported"),
+          getField(record, "dropNotes")
+        )
+      ]
     ]
   );
 
-  appendSourceSectionTo(drawerContent, record);
+  appendExpandableSection(
+    elements.itemDetailContent,
+    "EQL Mechanics",
+    "Transfer, extraction, upgrading, and observed mechanics",
+    [
+      [
+        "Effect-transfer value",
+        getField(record, "effectTransferValue")
+      ],
+      [
+        "Effect extractable",
+        getField(record, "effectExtractable")
+      ],
+      [
+        "Effect extraction rank",
+        getField(record, "effectExtractionRank")
+      ],
+      [
+        "Upgradeable",
+        getField(record, "upgradeable")
+      ],
+      [
+        "Maximum upgrade rank",
+        getField(record, "maximumUpgradeRank")
+      ],
+      [
+        "Duplicate-farming value",
+        getField(record, "duplicateFarmingValue")
+      ],
+      [
+        "Challenge tier observed",
+        getField(record, "challengeTierObserved")
+      ],
+      [
+        "Personal loot confirmed",
+        getField(record, "personalLootConfirmed")
+      ]
+    ]
+  );
+
+  appendExpandableSection(
+    elements.itemDetailContent,
+    "Classic Comparison",
+    "Classic baseline values retained for comparison",
+    [
+      [
+        "Classic stats",
+        getField(record, "statsClassic")
+      ],
+      [
+        "Classic classes",
+        getField(record, "classesClassic")
+      ],
+      [
+        "Classic races",
+        getField(record, "racesClassic")
+      ],
+      [
+        "Classic NPC level",
+        getField(record, "sourceNpcLevelClassic")
+      ],
+      [
+        "Era status",
+        getField(record, "eraStatus")
+      ],
+      [
+        "Classic baseline notes",
+        getField(record, "classicBaselineNotes")
+      ]
+    ]
+  );
+
+  appendResearchSection(record);
 
   elements.itemDialog.showModal();
+}
+
+function appendQuarantineWarning(container) {
+  const warning = document.createElement("aside");
+
+  warning.className = "quarantine-warning";
+
+  const heading = document.createElement("strong");
+  const body = document.createElement("p");
+
+  heading.textContent =
+    "Quarantined research record";
+
+  body.textContent =
+    "This item or drop source is retained as classic or investigative " +
+    "research, but it is not currently confirmed for EverQuest Legends.";
+
+  warning.append(heading, body);
+  container.append(warning);
+}
+
+function appendResearchSection(record) {
+  const fields = [
+    [
+      "Last checked",
+      getField(record, "eqlLastChecked")
+    ],
+    [
+      "Official patch date",
+      getField(record, "officialPatchDate")
+    ],
+    [
+      "Evidence strength",
+      getField(record, "evidenceStrength")
+    ],
+    [
+      "Current-build confirmed",
+      getField(record, "currentBuildConfirmed")
+    ],
+    [
+      "Conflict status",
+      getField(record, "conflictStatus")
+    ],
+    [
+      "Audit action",
+      getField(record, "auditAction")
+    ],
+    [
+      "Change summary",
+      getField(record, "eqlChangesSummary")
+    ],
+    [
+      "Verification notes",
+      getField(record, "eqlVerificationNotes")
+    ],
+    [
+      "Research notes",
+      getField(record, "researchNotes")
+    ],
+    [
+      "Revision",
+      getField(record, "revision")
+    ],
+    [
+      "Approved",
+      getField(record, "approved")
+    ],
+    [
+      "Source file",
+      record.__sourceFile
+    ]
+  ];
+
+  const links =
+    getPreferredSourceLinks(record);
+
+  const evidenceCount =
+    record.__evidence?.length ?? 0;
+
+  const historyCount =
+    record.__changeHistory?.length ?? 0;
+
+  if (evidenceCount > 0) {
+    fields.push([
+      "Attached evidence records",
+      String(evidenceCount)
+    ]);
+  }
+
+  if (historyCount > 0) {
+    fields.push([
+      "Attached change-history records",
+      String(historyCount)
+    ]);
+  }
+
+  appendExpandableSection(
+    elements.itemDetailContent,
+    "Research & Sources",
+    "Verification, conflicts, provenance, and research notes",
+    fields,
+    links
+  );
+}
+
+function appendExpandableSection(
+  container,
+  title,
+  hint,
+  fields,
+  links = []
+) {
+  const populatedFields = fields.filter(
+    ([, value]) => hasValue(value)
+  );
+
+  if (
+    populatedFields.length === 0 &&
+    links.length === 0
+  ) {
+    return;
+  }
+
+  const drawer = document.createElement("details");
+
+  drawer.className = "advanced-detail-drawer";
+
+  const summary = document.createElement("summary");
+  const label = document.createElement("span");
+  const hintElement = document.createElement("span");
+
+  label.className = "drawer-label";
+  label.textContent = title;
+
+  hintElement.className = "drawer-hint";
+  hintElement.textContent = hint;
+
+  summary.append(label, hintElement);
+  drawer.append(summary);
+
+  const content = document.createElement("div");
+
+  content.className = "advanced-detail-content";
+
+  if (populatedFields.length > 0) {
+    const grid = document.createElement("dl");
+
+    grid.className = "detail-grid";
+
+    for (const [fieldLabel, value] of populatedFields) {
+      const item = document.createElement("div");
+      const term = document.createElement("dt");
+      const description = document.createElement("dd");
+
+      term.textContent = fieldLabel;
+      description.textContent = value;
+
+      item.append(term, description);
+      grid.append(item);
+    }
+
+    content.append(grid);
+  }
+
+  if (links.length > 0) {
+    const sourceHeading = document.createElement("h3");
+    const sourceLinks = document.createElement("div");
+
+    sourceHeading.textContent = "Source links";
+    sourceLinks.className = "source-links";
+
+    for (const linkData of links) {
+      const link = document.createElement("a");
+
+      link.href = linkData.url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = linkData.label;
+
+      sourceLinks.append(link);
+    }
+
+    content.append(
+      sourceHeading,
+      sourceLinks
+    );
+  }
+
+  drawer.append(content);
+  container.append(drawer);
 }
 
 function appendQuickField(
@@ -771,92 +1181,10 @@ function appendQuickField(
   }
 
   term.textContent = label;
-  content.textContent = String(value).trim();
+  content.textContent = value;
 
   field.append(term, content);
   container.append(field);
-}
-
-function appendDetailSectionTo(
-  container,
-  title,
-  fields
-) {
-  const populatedFields = fields.filter(
-    ([, value]) => hasValue(value)
-  );
-
-  if (populatedFields.length === 0) {
-    return;
-  }
-
-  const section = document.createElement("section");
-  const heading = document.createElement("h3");
-  const grid = document.createElement("dl");
-
-  section.className = "detail-section";
-  heading.textContent = title;
-  grid.className = "detail-grid";
-
-  for (const [label, value] of populatedFields) {
-    const item = document.createElement("div");
-    const term = document.createElement("dt");
-    const description = document.createElement("dd");
-
-    term.textContent = label;
-    description.textContent = String(value).trim();
-
-    item.append(term, description);
-    grid.append(item);
-  }
-
-  section.append(heading, grid);
-  container.append(section);
-}
-
-function appendSourceSectionTo(container, record) {
-  const sourceFields = [
-    ["EQL source", record.eql_source_url],
-    ["EQL Wiki", record.eql_wiki_url],
-    ["Classic source", record.classic_source_url],
-    ["Project 1999", record.project1999_url],
-    ["Item source", record.item_url],
-    ["NPC source", record.npc_url]
-  ];
-
-  const validSources = sourceFields.filter(
-    ([, value]) => isSafeHttpUrl(value)
-  );
-
-  if (validSources.length === 0) {
-    return;
-  }
-
-  const section = document.createElement("section");
-  const heading = document.createElement("h3");
-  const links = document.createElement("div");
-
-  section.className = "detail-section";
-  heading.textContent = "Sources";
-  links.className = "source-links";
-
-  for (const [label, value] of validSources) {
-    const link = document.createElement("a");
-
-    link.href = value;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = label;
-
-    links.append(link);
-  }
-
-  section.append(heading, links);
-  container.append(section);
-}
-
-function firstPopulatedValue(...values) {
-  return values.find(value => hasValue(value)) ?? "";
 }
 
 function combineValues(...values) {
@@ -864,14 +1192,6 @@ function combineValues(...values) {
     .filter(value => hasValue(value))
     .map(value => String(value).trim())
     .join(" • ");
-}
-
-function hasValue(value) {
-  return (
-    value !== null &&
-    value !== undefined &&
-    String(value).trim() !== ""
-  );
 }
 
 function closeItemDetails() {
@@ -884,7 +1204,11 @@ function handleDialogBackdropClick(event) {
   }
 }
 
-function appendCell(row, value, className = "") {
+function appendCell(
+  row,
+  value,
+  className = ""
+) {
   const cell = document.createElement("td");
 
   cell.textContent = hasValue(value)
@@ -901,7 +1225,9 @@ function appendCell(row, value, className = "") {
 function updateCounts() {
   const zones = new Set(
     state.filteredRecords
-      .map(record => record.zone)
+      .map(record =>
+        getField(record, "zone")
+      )
       .filter(Boolean)
   );
 
@@ -932,11 +1258,27 @@ function renderDiagnostics() {
   );
 
   appendDiagnostic(
+    `Loot files: ${diagnostics.lootFiles}`
+  );
+
+  appendDiagnostic(
+    `Evidence files attached: ${diagnostics.evidenceFiles}`
+  );
+
+  appendDiagnostic(
+    `Change-history files attached: ${diagnostics.historyFiles}`
+  );
+
+  appendDiagnostic(
+    `Unknown datasets ignored: ${diagnostics.unknownFiles}`
+  );
+
+  appendDiagnostic(
     `Files failed: ${diagnostics.filesFailed}`
   );
 
   appendDiagnostic(
-    `Raw records: ${diagnostics.rawRecords}`
+    `Raw loot records: ${diagnostics.rawLootRecords}`
   );
 
   appendDiagnostic(
@@ -956,7 +1298,7 @@ function renderDiagnostics() {
   );
 
   appendDiagnostic(
-    `Files missing required columns: ${
+    `Loot files missing required columns: ${
       diagnostics.missingRequiredColumns.length
     }`
   );
@@ -979,7 +1321,10 @@ function renderDiagnostics() {
   }
 }
 
-function appendDiagnostic(text, className = "") {
+function appendDiagnostic(
+  text,
+  className = ""
+) {
   const paragraph = document.createElement("p");
 
   paragraph.textContent = text;
@@ -998,15 +1343,30 @@ function resetFilters() {
   elements.category.value = "";
   elements.slot.value = "";
   elements.className.value = "";
+  elements.race.value = "";
+  elements.minimumNpcLevel.value = "";
+  elements.maximumNpcLevel.value = "";
+  elements.magic.value = "";
+  elements.lore.value = "";
+  elements.noDrop.value = "";
+  elements.questItem.value = "";
+  elements.inventoryOnly.value = "";
+  elements.effectPresent.value = "";
+  elements.effectTransfer.value = "";
   elements.verification.value = "";
+  elements.auditAction.value = "";
   elements.confidence.value = "";
-  elements.approvedOnly.checked = true;
+  elements.targetPriority.value = "";
+  elements.approvedOnly.checked = false;
   elements.statMode.value = "all";
 
   clearStatFilters();
 }
 
-function updateStatus(message, statusType = "") {
+function updateStatus(
+  message,
+  statusType = ""
+) {
   elements.status.textContent = message;
   elements.status.className = "status";
 
@@ -1022,21 +1382,4 @@ function displayFallbackError(message) {
   errorBox.textContent = message;
 
   document.body.prepend(errorBox);
-}
-
-function isSafeHttpUrl(value) {
-  if (!hasValue(value)) {
-    return false;
-  }
-
-  try {
-    const url = new URL(String(value).trim());
-
-    return (
-      url.protocol === "http:" ||
-      url.protocol === "https:"
-    );
-  } catch {
-    return false;
-  }
 }
