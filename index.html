@@ -99,6 +99,14 @@
         </label>
 
         <label>
+          Source NPC
+
+          <select id="source-npc-filter">
+            <option value="">All source NPCs</option>
+          </select>
+        </label>
+
+        <label>
           Item category
 
           <select id="category-filter">
@@ -153,6 +161,14 @@
             placeholder="Any"
           >
         </label>
+
+        <p
+          id="npc-level-hint"
+          class="filter-hint level-range-hint"
+          aria-live="polite"
+        >
+          Available source NPC levels will appear after loading.
+        </p>
 
         <label>
           Magic
@@ -248,6 +264,7 @@
 
           <select id="verification-filter">
             <option value="">All statuses</option>
+
             <option value="__confirmed_only__">
               EQL Confirmed only
             </option>
@@ -415,8 +432,15 @@
       <header class="dialog-header">
         <div>
           <p class="eyebrow">Loot record</p>
-          <h2 id="detail-item-name">Item details</h2>
-          <p id="detail-item-subtitle" class="detail-subtitle"></p>
+
+          <h2 id="detail-item-name">
+            Item details
+          </h2>
+
+          <p
+            id="detail-item-subtitle"
+            class="detail-subtitle"
+          ></p>
         </div>
 
         <button
@@ -436,6 +460,9 @@
     </div>
   </dialog>
 
-  <script type="module" src="./js/app.js"></script>
+  <script
+    type="module"
+    src="./js/app.js"
+  ></script>
 </body>
 </html>
