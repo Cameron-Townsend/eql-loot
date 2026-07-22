@@ -10,7 +10,7 @@
 
   <meta
     name="description"
-    content="Search and compare audited EverQuest Legends loot records by zone, class, slot, stats, source, and verification status."
+    content="Search and compare researched EverQuest Legends loot records by zone, class, race, slot, stats, source, and EQL verification."
   >
 
   <title>EverQuest Legends Loot Explorer</title>
@@ -21,13 +21,13 @@
 <body>
   <header class="site-header">
     <div>
-      <p class="eyebrow">Community Database Tool</p>
+      <p class="eyebrow">EQL Research Database</p>
 
       <h1>EverQuest Legends Loot Explorer</h1>
 
       <p class="subtitle">
-        Search audited loot records and identify zones containing useful
-        equipment and items.
+        Search EQL-first loot records while preserving classic data,
+        source provenance, and unresolved research findings.
       </p>
     </div>
 
@@ -73,12 +73,12 @@
 
       <div class="filter-grid">
         <label class="search-control">
-          Search all loot information
+          Search loot information
 
           <input
             id="search-filter"
             type="search"
-            placeholder="Item, NPC, stats, effect, zone, notes…"
+            placeholder="Item, NPC, effect, zone, stats, notes…"
           >
         </label>
 
@@ -123,22 +123,142 @@
         </label>
 
         <label>
+          EQL race
+
+          <select id="race-filter">
+            <option value="">All races</option>
+          </select>
+        </label>
+
+        <label>
+          Minimum source NPC level
+
+          <input
+            id="minimum-level-filter"
+            type="number"
+            min="0"
+            inputmode="numeric"
+            placeholder="Any"
+          >
+        </label>
+
+        <label>
+          Maximum source NPC level
+
+          <input
+            id="maximum-level-filter"
+            type="number"
+            min="0"
+            inputmode="numeric"
+            placeholder="Any"
+          >
+        </label>
+
+        <label>
+          Magic
+
+          <select id="magic-filter">
+            <option value="">Any</option>
+            <option value="yes">Magic only</option>
+            <option value="no">Not magic</option>
+            <option value="unknown">Unknown</option>
+          </select>
+        </label>
+
+        <label>
+          Lore
+
+          <select id="lore-filter">
+            <option value="">Any</option>
+            <option value="yes">Lore only</option>
+            <option value="no">Not lore</option>
+            <option value="unknown">Unknown</option>
+          </select>
+        </label>
+
+        <label>
+          No Drop
+
+          <select id="no-drop-filter">
+            <option value="">Any</option>
+            <option value="yes">No Drop only</option>
+            <option value="no">Tradeable only</option>
+            <option value="unknown">Unknown</option>
+          </select>
+        </label>
+
+        <label>
+          Quest item
+
+          <select id="quest-item-filter">
+            <option value="">Any</option>
+            <option value="yes">Quest items only</option>
+            <option value="no">Non-quest items</option>
+            <option value="unknown">Unknown</option>
+          </select>
+        </label>
+
+        <label>
+          Inventory only
+
+          <select id="inventory-only-filter">
+            <option value="">Any</option>
+            <option value="yes">Inventory only</option>
+            <option value="no">Equippable/non-inventory</option>
+            <option value="unknown">Unknown</option>
+          </select>
+        </label>
+
+        <label>
+          Proc, click, or focus
+
+          <select id="effect-present-filter">
+            <option value="">Any</option>
+            <option value="yes">Effect present</option>
+            <option value="no">No effect listed</option>
+          </select>
+        </label>
+
+        <label>
+          Effect-transfer value
+
+          <select id="effect-transfer-filter">
+            <option value="">All values</option>
+          </select>
+        </label>
+
+        <label>
           EQL verification
 
           <select id="verification-filter">
-            <option value="">
-              All verification statuses
+            <option value="">All statuses</option>
+            <option value="__confirmed_only__">
+              EQL Confirmed only
             </option>
           </select>
         </label>
 
         <label>
-          Data confidence
+          Audit action
+
+          <select id="audit-action-filter">
+            <option value="">All audit actions</option>
+          </select>
+        </label>
+
+        <label>
+          Confidence
 
           <select id="confidence-filter">
-            <option value="">
-              All confidence levels
-            </option>
+            <option value="">All confidence levels</option>
+          </select>
+        </label>
+
+        <label>
+          Target priority
+
+          <select id="target-priority-filter">
+            <option value="">All priorities</option>
           </select>
         </label>
 
@@ -146,10 +266,9 @@
           <input
             id="approved-filter"
             type="checkbox"
-            checked
           >
 
-          <span>Show approved records only</span>
+          <span>Approved records only</span>
         </label>
       </div>
 
@@ -158,8 +277,8 @@
 
         <div class="stat-filter-heading">
           <p>
-            Select one or more stats. The app can require all selected
-            stats or accept items containing any selected stat.
+            Select one or more stats. Require all selected stats or
+            accept items containing any selected stat.
           </p>
 
           <div class="stat-mode-control">
@@ -230,7 +349,7 @@
         </div>
 
         <p class="table-help">
-          Select an item name to view its complete record.
+          Select an item name to view gameplay details and research status.
         </p>
       </div>
 
@@ -239,15 +358,15 @@
           <thead>
             <tr>
               <th>Item</th>
-              <th>Slot</th>
               <th>Zone</th>
+              <th>Slot</th>
+              <th>EQL Stats</th>
+              <th>EQL Classes</th>
               <th>Source NPC</th>
-              <th>EQL NPC level</th>
-              <th>EQL classes</th>
-              <th>Preferred stats</th>
-              <th>Verification</th>
+              <th>NPC Level</th>
+              <th>Effect</th>
+              <th>EQL Status</th>
               <th>Confidence</th>
-              <th>Approved</th>
             </tr>
           </thead>
 
