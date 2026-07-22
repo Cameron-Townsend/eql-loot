@@ -20,6 +20,7 @@ import {
 } from "./database.js";
 
 import {
+  createConditionalFilterOptions,
   createFilterOptions,
   filterRecords,
   getRecordEffectTypes,
@@ -121,6 +122,9 @@ function captureElements() {
   elements.zone =
     document.querySelector("#zone-filter");
 
+  elements.sourceNpc =
+    document.querySelector("#source-npc-filter");
+
   elements.category =
     document.querySelector("#category-filter");
 
@@ -138,6 +142,9 @@ function captureElements() {
 
   elements.maximumNpcLevel =
     document.querySelector("#maximum-level-filter");
+
+  elements.npcLevelHint =
+    document.querySelector("#npc-level-hint");
 
   elements.magic =
     document.querySelector("#magic-filter");
@@ -236,6 +243,7 @@ function bindEvents() {
     elements.search,
     elements.continent,
     elements.zone,
+    elements.sourceNpc,
     elements.category,
     elements.slot,
     elements.className,
@@ -262,19 +270,14 @@ function bindEvents() {
   for (const control of controls) {
     control.addEventListener(
       "input",
-      applyCurrentFilters
+      handleFilterChange
     );
 
     control.addEventListener(
       "change",
-      applyCurrentFilters
+      handleFilterChange
     );
   }
-
-  elements.effectType.addEventListener(
-    "change",
-    updateFocusFilterAvailability
-  );
 
   elements.resetButton.addEventListener(
     "click",
@@ -307,6 +310,11 @@ function bindEvents() {
   );
 }
 
+function handleFilterChange() {
+  updateEffectFilterAvailability();
+  applyCurrentFilters();
+}
+
 function populateFilters(options) {
   populateSelect(
     elements.continent,
@@ -318,6 +326,12 @@ function populateFilters(options) {
     elements.zone,
     options.zones,
     "All zones"
+  );
+
+  populateSelect(
+    elements.sourceNpc,
+    options.sourceNpcs,
+    "All source NPCs"
   );
 
   populateSelect(
@@ -384,7 +398,7 @@ function populateFilters(options) {
     "All priorities"
   );
 
-  updateFocusFilterAvailability();
+  updateEffectFilterAvailability();
 }
 
 function populateVerificationSelect(statuses) {
@@ -446,27 +460,521 @@ function appendOption(
   select.append(option);
 }
 
-function updateFocusFilterAvailability() {
-  const selectedType = elements.effectType.value;
+function updateEffectFilterAvailability() {
+  const effectPresence =
+    elements.effectPresent.value;
 
-  /*
-   * The focus-family filter remains available when no effect type is
-   * selected, allowing the user to search focus effects directly.
-   *
-   * It is disabled only when the user explicitly chooses Proc, Click,
-   * Other, or another non-focus effect type.
-   */
-  const disabled =
+  const selectedType =
+    elements.effectType.value;
+
+  const noEffectSelected =
+    effectPresence === "no";
+
+  elements.effectType.disabled =
+    noEffectSelected;
+
+  elements.effectTransfer.disabled =
+    noEffectSelected;
+
+  elements.focusEffect.disabled =
+    noEffectSelected ||
+    (
+      selectedType !== "" &&
+      selectedType !== "Focus"
+    );
+
+  if (noEffectSelected) {
+    elements.effectType.value = "";
+    elements.focusEffect.value = "";
+    elements.effectTransfer.value = "";
+  } else if (
     selectedType !== "" &&
-    selectedType !== "Focus";
-
-  elements.focusEffect.disabled = disabled;
-
-  if (disabled) {
+    selectedType !== "Focus"
+  ) {
     elements.focusEffect.value = "";
   }
 }
+function getCurrentFilters() {
+  return {
+    search: elements.search.value,
+    continent: elements.continent.value,
+    zone: elements.zone.value,
+    sourceNpc: elements.sourceNpc.value,
+    category: elements.category.value,
+    slot: elements.slot.value,
+    className: elements.className.value,
+    race: elements.race.value,
 
+    minimumNpcLevel:
+      elements.minimumNpcLevel.value,
+
+    maximumNpcLevel:
+      elements.maximumNpcLevel.value,
+
+    magic: elements.magic.value,
+    lore: elements.lore.value,
+    noDrop: elements.noDrop.value,
+    questItem: elements.questItem.value,
+    inventoryOnly: elements.inventoryOnly.value,
+
+    effectPresent:
+      elements.effectPresent.value,
+
+    effectType:
+      elements.effectType.value,
+
+    focusEffect:
+      elements.focusEffect.value,
+
+    effectTransferValue:
+      elements.effectTransfer.value,
+
+    verification:
+      elements.verification.value,
+
+    auditAction:
+      elements.auditAction.value,
+
+    confidence:
+      elements.confidence.value,
+
+    targetPriority:
+      elements.targetPriority.value,
+
+    approvedOnly:
+      elements.approvedOnly.checked,
+
+    stats: [...state.selectedStats],
+    statMode: elements.statMode.value
+  };
+}
+
+function refreshConditionalFilters(filters) {
+  const options = createConditionalFilterOptions(
+    state.records,
+    filters
+  );
+
+  populateConditionalSelect(
+    elements.continent,
+    options.continents,
+    "All continents",
+    filters.continent
+  );
+
+  populateConditionalSelect(
+    elements.zone,
+    options.zones,
+    "All zones",
+    filters.zone
+  );
+
+  populateConditionalSelect(
+    elements.sourceNpc,
+    options.sourceNpcs,
+    "All source NPCs",
+    filters.sourceNpc
+  );
+
+  populateConditionalSelect(
+    elements.category,
+    options.categories,
+    "All categories",
+    filters.category
+  );
+
+  populateConditionalSelect(
+    elements.slot,
+    options.slots,
+    "All slots",
+    filters.slot
+  );
+
+  populateConditionalSelect(
+    elements.className,
+    options.classes,
+    "All classes",
+    filters.className
+  );
+
+  populateConditionalSelect(
+    elements.race,
+    options.races,
+    "All races",
+    filters.race
+  );
+
+  populateConditionalSelect(
+    elements.effectType,
+    options.effectTypes,
+    "All effect types",
+    filters.effectType
+  );
+
+  populateConditionalSelect(
+    elements.focusEffect,
+    options.focusEffects,
+    "All focus effects",
+    filters.focusEffect
+  );
+
+  populateConditionalSelect(
+    elements.effectTransfer,
+    options.effectTransferValues,
+    "All values",
+    filters.effectTransferValue
+  );
+
+  populateConditionalVerificationSelect(
+    options.verificationStatuses,
+    filters.verification
+  );
+
+  populateConditionalSelect(
+    elements.auditAction,
+    options.auditActions,
+    "All audit actions",
+    filters.auditAction
+  );
+
+  populateConditionalSelect(
+    elements.confidence,
+    options.confidenceLevels,
+    "All confidence levels",
+    filters.confidence
+  );
+
+  populateConditionalSelect(
+    elements.targetPriority,
+    options.targetPriorities,
+    "All priorities",
+    filters.targetPriority
+  );
+
+  populateBooleanSelect(
+    elements.magic,
+    options.booleanCounts.magic,
+    "Any",
+    filters.magic,
+    {
+      yes: "Magic only",
+      no: "Not magic",
+      unknown: "Unknown"
+    }
+  );
+
+  populateBooleanSelect(
+    elements.lore,
+    options.booleanCounts.lore,
+    "Any",
+    filters.lore,
+    {
+      yes: "Lore only",
+      no: "Not lore",
+      unknown: "Unknown"
+    }
+  );
+
+  populateBooleanSelect(
+    elements.noDrop,
+    options.booleanCounts.noDrop,
+    "Any",
+    filters.noDrop,
+    {
+      yes: "No Drop only",
+      no: "Tradeable only",
+      unknown: "Unknown"
+    }
+  );
+
+  populateBooleanSelect(
+    elements.questItem,
+    options.booleanCounts.questItem,
+    "Any",
+    filters.questItem,
+    {
+      yes: "Quest items only",
+      no: "Non-quest items",
+      unknown: "Unknown"
+    }
+  );
+
+  populateBooleanSelect(
+    elements.inventoryOnly,
+    options.booleanCounts.inventoryOnly,
+    "Any",
+    filters.inventoryOnly,
+    {
+      yes: "Inventory only",
+      no: "Equippable/non-inventory",
+      unknown: "Unknown"
+    }
+  );
+
+  populateBooleanSelect(
+    elements.effectPresent,
+    options.booleanCounts.effectPresent,
+    "Any",
+    filters.effectPresent,
+    {
+      yes: "Effect present",
+      no: "No effect listed"
+    }
+  );
+
+  renderConditionalStatOptions(
+    options.stats
+  );
+
+  updateNpcLevelHint(
+    options.npcLevelRange
+  );
+
+  updateEffectFilterAvailability();
+}
+
+function populateConditionalSelect(
+  select,
+  options,
+  defaultLabel,
+  selectedValue
+) {
+  select.replaceChildren();
+
+  appendOption(
+    select,
+    "",
+    defaultLabel
+  );
+
+  const optionMap = new Map(
+    options.map(option => [
+      option.value,
+      option.count
+    ])
+  );
+
+  if (
+    selectedValue &&
+    !optionMap.has(selectedValue)
+  ) {
+    optionMap.set(selectedValue, 0);
+  }
+
+  const sortedOptions = [...optionMap.entries()]
+    .sort((left, right) =>
+      naturalCompare(left[0], right[0])
+    );
+
+  for (const [value, count] of sortedOptions) {
+    const label =
+      count > 0
+        ? `${value} (${count})`
+        : `${value} (0 matches)`;
+
+    const option = document.createElement("option");
+
+    option.value = value;
+    option.textContent = label;
+
+    if (
+      count === 0 &&
+      value !== selectedValue
+    ) {
+      option.disabled = true;
+    }
+
+    select.append(option);
+  }
+
+  select.value = selectedValue || "";
+}
+
+function populateConditionalVerificationSelect(
+  options,
+  selectedValue
+) {
+  elements.verification.replaceChildren();
+
+  appendOption(
+    elements.verification,
+    "",
+    "All statuses"
+  );
+
+  appendOption(
+    elements.verification,
+    "__confirmed_only__",
+    "EQL Confirmed only"
+  );
+
+  const optionMap = new Map(
+    options.map(option => [
+      option.value,
+      option.count
+    ])
+  );
+
+  if (
+    selectedValue &&
+    selectedValue !== "__confirmed_only__" &&
+    !optionMap.has(selectedValue)
+  ) {
+    optionMap.set(selectedValue, 0);
+  }
+
+  for (
+    const [value, count]
+    of [...optionMap.entries()].sort(
+      (left, right) =>
+        naturalCompare(left[0], right[0])
+    )
+  ) {
+    const option = document.createElement("option");
+
+    option.value = value;
+    option.textContent =
+      count > 0
+        ? `${value} (${count})`
+        : `${value} (0 matches)`;
+
+    if (
+      count === 0 &&
+      value !== selectedValue
+    ) {
+      option.disabled = true;
+    }
+
+    elements.verification.append(option);
+  }
+
+  elements.verification.value =
+    selectedValue || "";
+}
+
+function populateBooleanSelect(
+  select,
+  counts,
+  defaultLabel,
+  selectedValue,
+  labels
+) {
+  select.replaceChildren();
+
+  appendOption(
+    select,
+    "",
+    defaultLabel
+  );
+
+  for (const [value, label] of Object.entries(labels)) {
+    const count = counts[value] ?? 0;
+    const option = document.createElement("option");
+
+    option.value = value;
+    option.textContent =
+      count > 0
+        ? `${label} (${count})`
+        : `${label} (0 matches)`;
+
+    if (
+      count === 0 &&
+      value !== selectedValue
+    ) {
+      option.disabled = true;
+    }
+
+    select.append(option);
+  }
+
+  select.value = selectedValue || "";
+}
+
+function renderConditionalStatOptions(options) {
+  elements.statOptions.replaceChildren();
+
+  const optionMap = new Map(
+    options.map(option => [
+      option.value,
+      option.count
+    ])
+  );
+
+  for (const selectedStat of state.selectedStats) {
+    if (!optionMap.has(selectedStat)) {
+      optionMap.set(selectedStat, 0);
+    }
+  }
+
+  if (optionMap.size === 0) {
+    const message = document.createElement("p");
+
+    message.className = "muted-message";
+    message.textContent =
+      "No recognized stats are available under the current filters.";
+
+    elements.statOptions.append(message);
+    return;
+  }
+
+  for (
+    const [stat, count]
+    of [...optionMap.entries()].sort(
+      (left, right) =>
+        naturalCompare(left[0], right[0])
+    )
+  ) {
+    const label = document.createElement("label");
+    const checkbox = document.createElement("input");
+    const text = document.createElement("span");
+
+    const isSelected =
+      state.selectedStats.has(stat);
+
+    label.className = "stat-option";
+
+    if (count === 0) {
+      label.classList.add("is-unavailable");
+    }
+
+    checkbox.type = "checkbox";
+    checkbox.value = stat;
+    checkbox.dataset.statFilter = "true";
+    checkbox.checked = isSelected;
+    checkbox.disabled =
+      count === 0 && !isSelected;
+
+    text.textContent =
+      count > 0
+        ? `${stat} (${count})`
+        : `${stat} (0 matches)`;
+
+    label.append(checkbox, text);
+    elements.statOptions.append(label);
+  }
+}
+
+function updateNpcLevelHint(range) {
+  if (
+    range.minimum === null ||
+    range.maximum === null
+  ) {
+    elements.npcLevelHint.textContent =
+      "No source NPC levels are available under the current filters.";
+
+    return;
+  }
+
+  const rangeText =
+    range.minimum === range.maximum
+      ? `level ${range.minimum}`
+      : `levels ${range.minimum}–${range.maximum}`;
+
+  elements.npcLevelHint.textContent =
+    `Available source NPC ${rangeText} across ` +
+    `${range.recordCount} candidate record` +
+    `${range.recordCount === 1 ? "" : "s"}.`;
+}
 function renderStatOptions(stats) {
   elements.statOptions.replaceChildren();
 
@@ -533,57 +1041,7 @@ function clearStatFilters() {
 }
 
 function applyCurrentFilters() {
-  const filters = {
-    search: elements.search.value,
-    continent: elements.continent.value,
-    zone: elements.zone.value,
-    category: elements.category.value,
-    slot: elements.slot.value,
-    className: elements.className.value,
-    race: elements.race.value,
-
-    minimumNpcLevel:
-      elements.minimumNpcLevel.value,
-
-    maximumNpcLevel:
-      elements.maximumNpcLevel.value,
-
-    magic: elements.magic.value,
-    lore: elements.lore.value,
-    noDrop: elements.noDrop.value,
-    questItem: elements.questItem.value,
-    inventoryOnly: elements.inventoryOnly.value,
-
-    effectPresent:
-      elements.effectPresent.value,
-
-    effectType:
-      elements.effectType.value,
-
-    focusEffect:
-      elements.focusEffect.value,
-
-    effectTransferValue:
-      elements.effectTransfer.value,
-
-    verification:
-      elements.verification.value,
-
-    auditAction:
-      elements.auditAction.value,
-
-    confidence:
-      elements.confidence.value,
-
-    targetPriority:
-      elements.targetPriority.value,
-
-    approvedOnly:
-      elements.approvedOnly.checked,
-
-    stats: [...state.selectedStats],
-    statMode: elements.statMode.value
-  };
+  const filters = getCurrentFilters();
 
   state.filteredRecords = filterRecords(
     state.records,
@@ -606,6 +1064,7 @@ function applyCurrentFilters() {
     );
   });
 
+  refreshConditionalFilters(filters);
   renderResults();
   renderZoneSummary();
   updateCounts();
@@ -771,7 +1230,6 @@ function handleResultClick(event) {
 
   openItemDetails(record);
 }
-
 function openItemDetails(record) {
   const itemName =
     getField(record, "itemName") ||
@@ -1437,6 +1895,7 @@ function resetFilters() {
   elements.search.value = "";
   elements.continent.value = "";
   elements.zone.value = "";
+  elements.sourceNpc.value = "";
   elements.category.value = "";
   elements.slot.value = "";
   elements.className.value = "";
@@ -1459,8 +1918,10 @@ function resetFilters() {
   elements.approvedOnly.checked = false;
   elements.statMode.value = "all";
 
-  updateFocusFilterAvailability();
-  clearStatFilters();
+  state.selectedStats.clear();
+
+  updateEffectFilterAvailability();
+  applyCurrentFilters();
 }
 
 function updateStatus(
