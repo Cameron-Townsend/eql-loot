@@ -1,5 +1,8 @@
 "use strict";
-
+import {
+  getNormalizationSummary,
+  normalizeRecord
+} from "./schema-normalizer.js";
 /*
  * EverQuest Legends Loot Explorer
  * Core database and compatibility layer
@@ -76,6 +79,50 @@ export const FIELD_GROUPS = {
  * requiring importer changes.
  */
 export const FIELD_ALIASES = {
+  schemaVersion: [
+    "schema_version"
+  ],
+
+  recordType: [
+    "record_type"
+  ],
+
+  recordStatus: [
+    "record_status"
+  ],
+
+  sourceRecordId: [
+    "source_record_id"
+  ],
+
+  canonicalRecordId: [
+    "canonical_record_id"
+  ],
+
+  parentRecordId: [
+    "parent_record_id"
+  ],
+
+  relatedRecordIds: [
+    "related_record_ids"
+  ],
+
+  displayDefault: [
+    "display_default"
+  ],
+
+  searchable: [
+    "searchable"
+  ],
+
+  recordNotes: [
+    "record_notes"
+  ],
+
+  coreOrSupplemental: [
+    "core_or_supplemental"
+  ],
+  
   recordId: [
     "record_id",
     "id"
@@ -473,7 +520,16 @@ export const REQUIRED_LOOT_COLUMNS = [
   "item_name"
 ];
 
-export function buildDatabase(fileResults) {
+export function buildDatabase(
+  fileResults,
+  registry
+) {
+    if (!registry) {
+    throw new Error(
+      "Database construction requires the loaded EQL schema registry."
+    );
+  }
+  
   const diagnostics = {
     filesDiscovered: fileResults.length,
     filesLoaded: 0,
@@ -486,6 +542,16 @@ export function buildDatabase(fileResults) {
 
     rawLootRecords: 0,
     uniqueRecords: 0,
+
+    normalizedRecords: 0,
+    normalizedLootRecords: 0,
+    normalizedCorrectionRecords: 0,
+    normalizedResearchRecords: 0,
+    normalizedMetadataRecords: 0,
+    normalizedUnknownTypeRecords: 0,
+
+    recordsWithExtensions: 0,
+    extensionFieldCount: 0,
 
     duplicateRecords: [],
     malformedRecords: [],
@@ -548,7 +614,10 @@ export function buildDatabase(fileResults) {
     }
 
     for (const rawRecord of fileResult.records) {
-      const record = prepareLootRecord(rawRecord);
+      const record = prepareLootRecord(
+  rawRecord,
+  registry
+);
       const recordId = getField(record, "recordId");
 
       if (!recordId) {
@@ -626,7 +695,37 @@ export function buildDatabase(fileResults) {
     );
   });
 
-  diagnostics.uniqueRecords = records.length;
+    diagnostics.uniqueRecords =
+    records.length;
+
+  const normalizationSummary =
+    getNormalizationSummary(
+      records
+    );
+
+  diagnostics.normalizedRecords =
+    normalizationSummary.totalRecords;
+
+  diagnostics.normalizedLootRecords =
+    normalizationSummary.lootRecords;
+
+  diagnostics.normalizedCorrectionRecords =
+    normalizationSummary.correctionRecords;
+
+  diagnostics.normalizedResearchRecords =
+    normalizationSummary.researchRecords;
+
+  diagnostics.normalizedMetadataRecords =
+    normalizationSummary.metadataRecords;
+
+  diagnostics.normalizedUnknownTypeRecords =
+    normalizationSummary.unknownTypeRecords;
+
+  diagnostics.recordsWithExtensions =
+    normalizationSummary.recordsWithExtensions;
+
+  diagnostics.extensionFieldCount =
+    normalizationSummary.extensionFieldCount;
 
   return {
     records,
@@ -672,17 +771,14 @@ export function classifyDataset(headers, filename = "") {
   return "unknown";
 }
 
-export function prepareLootRecord(record) {
-  return {
-    ...record,
-
-    /*
-     * Hooks for future related CSV datasets.
-     * These arrays remain empty when the primary loot CSV is used alone.
-     */
-    __evidence: [],
-    __changeHistory: []
-  };
+export function prepareLootRecord(
+  record,
+  registry
+) {
+  return normalizeRecord(
+    record,
+    registry
+  );
 }
 
 function attachRelatedRecords(
@@ -750,7 +846,11 @@ export function getPreferredRaces(record) {
 export function getPreferredNpcLevel(record) {
   return (
     getField(record, "sourceNpcLevelEql") ||
-    getField(record, "sourceNpcLevel")
+    getField(record, "sourceNpcLevel") ||
+    getField(
+      record,
+      "sourceNpcLevelClassic"
+    )
   );
 }
 
