@@ -1,0 +1,2 @@
+record_id,item_name,drop_rate_reported,source_name_aliases,research_notes
+TEST-S2-050,"Scholar's Token","12.5%","Scholar; The Scholar; Scholar NPC","Apostrophe, percentage, semicolon list, and punctuation: all valid."

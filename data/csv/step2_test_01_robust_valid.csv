@@ -1,0 +1,5 @@
+﻿record_id,item_name,zone,source_npc,research_notes,experimental_future_field
+TEST-S2-001,"Captain O'Rourke's Blade","North Karana","Captain O'Rourke","Confirmed by two players, but exact rate is unknown.","future-value-1"
+TEST-S2-002,"Multiline Research Note","South Karana","a test gnoll","First observation.
+Second observation, with a comma.","future-value-2"
+TEST-S2-003,"Blank Optional Fields",,,,"future-value-3"
