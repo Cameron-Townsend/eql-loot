@@ -10,7 +10,7 @@
 
   <meta
     name="description"
-    content="Search and compare researched EverQuest Legends loot records by zone, class, race, slot, stats, source, effects, and EQL verification."
+    content="Search, compare, and plan equipment builds from researched EverQuest Legends loot records."
   >
 
   <title>EverQuest Legends Loot Explorer</title>
@@ -26,18 +26,25 @@
       <h1>EverQuest Legends Loot Explorer</h1>
 
       <p class="subtitle">
-        Search EQL-first loot records while preserving classic data,
-        source provenance, and unresolved research findings.
+        Search EQL-first loot records, compare researched items,
+        and assemble an equipment build with EQL Any slots.
       </p>
     </div>
 
-    <p id="status" class="status" aria-live="polite">
+    <p
+      id="status"
+      class="status"
+      aria-live="polite"
+    >
       Loading database…
     </p>
   </header>
 
   <main>
-    <section class="summary-grid" aria-label="Database summary">
+    <section
+      class="summary-grid"
+      aria-label="Database summary"
+    >
       <article class="summary-card">
         <span>CSV files</span>
         <strong id="file-count">0</strong>
@@ -66,7 +73,10 @@
           <h2>Filters</h2>
         </div>
 
-        <button id="reset-filters" type="button">
+        <button
+          id="reset-filters"
+          type="button"
+        >
           Reset filters
         </button>
       </div>
@@ -86,7 +96,9 @@
           Continent
 
           <select id="continent-filter">
-            <option value="">All continents</option>
+            <option value="">
+              All continents
+            </option>
           </select>
         </label>
 
@@ -94,7 +106,9 @@
           Zone
 
           <select id="zone-filter">
-            <option value="">All zones</option>
+            <option value="">
+              All zones
+            </option>
           </select>
         </label>
 
@@ -102,7 +116,9 @@
           Source NPC
 
           <select id="source-npc-filter">
-            <option value="">All source NPCs</option>
+            <option value="">
+              All source NPCs
+            </option>
           </select>
         </label>
 
@@ -110,7 +126,9 @@
           Item category
 
           <select id="category-filter">
-            <option value="">All categories</option>
+            <option value="">
+              All categories
+            </option>
           </select>
         </label>
 
@@ -118,7 +136,9 @@
           Equipment slot
 
           <select id="slot-filter">
-            <option value="">All slots</option>
+            <option value="">
+              All slots
+            </option>
           </select>
         </label>
 
@@ -126,7 +146,9 @@
           EQL class
 
           <select id="class-filter">
-            <option value="">All classes</option>
+            <option value="">
+              All classes
+            </option>
           </select>
         </label>
 
@@ -134,7 +156,9 @@
           EQL race
 
           <select id="race-filter">
-            <option value="">All races</option>
+            <option value="">
+              All races
+            </option>
           </select>
         </label>
 
@@ -220,7 +244,9 @@
           <select id="inventory-only-filter">
             <option value="">Any</option>
             <option value="yes">Inventory only</option>
-            <option value="no">Equippable/non-inventory</option>
+            <option value="no">
+              Equippable/non-inventory
+            </option>
             <option value="unknown">Unknown</option>
           </select>
         </label>
@@ -239,7 +265,9 @@
           Effect type
 
           <select id="effect-type-filter">
-            <option value="">All effect types</option>
+            <option value="">
+              All effect types
+            </option>
           </select>
         </label>
 
@@ -247,7 +275,9 @@
           Focus-effect family
 
           <select id="focus-effect-filter">
-            <option value="">All focus effects</option>
+            <option value="">
+              All focus effects
+            </option>
           </select>
         </label>
 
@@ -255,7 +285,9 @@
           Effect-transfer value
 
           <select id="effect-transfer-filter">
-            <option value="">All values</option>
+            <option value="">
+              All values
+            </option>
           </select>
         </label>
 
@@ -263,7 +295,9 @@
           EQL verification
 
           <select id="verification-filter">
-            <option value="">All statuses</option>
+            <option value="">
+              All statuses
+            </option>
 
             <option value="__confirmed_only__">
               EQL Confirmed only
@@ -275,7 +309,9 @@
           Audit action
 
           <select id="audit-action-filter">
-            <option value="">All audit actions</option>
+            <option value="">
+              All audit actions
+            </option>
           </select>
         </label>
 
@@ -283,7 +319,9 @@
           Confidence
 
           <select id="confidence-filter">
-            <option value="">All confidence levels</option>
+            <option value="">
+              All confidence levels
+            </option>
           </select>
         </label>
 
@@ -291,7 +329,9 @@
           Target priority
 
           <select id="target-priority-filter">
-            <option value="">All priorities</option>
+            <option value="">
+              All priorities
+            </option>
           </select>
         </label>
 
@@ -350,6 +390,337 @@
       </fieldset>
     </section>
 
+    <section
+      id="build-planner-panel"
+      class="panel build-planner-panel"
+    >
+      <div class="panel-header build-planner-header">
+        <div>
+          <p class="eyebrow">Equipment planning</p>
+          <h2>EQL Build Planner</h2>
+
+          <p class="planner-introduction">
+            Equip researched items into their normal slots or use
+            either EQL Any slot for any normally equippable item.
+          </p>
+        </div>
+
+        <button
+          id="clear-build-button"
+          type="button"
+        >
+          Clear build
+        </button>
+      </div>
+
+      <div class="build-name-row">
+        <label>
+          Build name
+
+          <input
+            id="build-name-input"
+            type="text"
+            maxlength="80"
+            placeholder="My EQL equipment build"
+          >
+        </label>
+
+        <p
+          id="build-save-status"
+          class="build-save-status"
+          aria-live="polite"
+        >
+          Build saves automatically in this browser.
+        </p>
+      </div>
+
+      <div class="paper-doll-layout">
+        <div
+          class="paper-doll-grid"
+          aria-label="Equipment build slots"
+        >
+          <button
+            class="planner-slot"
+            type="button"
+            data-planner-slot="ear_left"
+          >
+            <span class="planner-slot-label">Left Ear</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot"
+            type="button"
+            data-planner-slot="neck"
+          >
+            <span class="planner-slot-label">Neck</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot"
+            type="button"
+            data-planner-slot="face"
+          >
+            <span class="planner-slot-label">Face</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot"
+            type="button"
+            data-planner-slot="head"
+          >
+            <span class="planner-slot-label">Head</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot"
+            type="button"
+            data-planner-slot="ear_right"
+          >
+            <span class="planner-slot-label">Right Ear</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot"
+            type="button"
+            data-planner-slot="finger_left"
+          >
+            <span class="planner-slot-label">Left Finger</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot"
+            type="button"
+            data-planner-slot="wrist_left"
+          >
+            <span class="planner-slot-label">Left Wrist</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot"
+            type="button"
+            data-planner-slot="arms"
+          >
+            <span class="planner-slot-label">Arms</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot"
+            type="button"
+            data-planner-slot="hands"
+          >
+            <span class="planner-slot-label">Hands</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot"
+            type="button"
+            data-planner-slot="wrist_right"
+          >
+            <span class="planner-slot-label">Right Wrist</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot"
+            type="button"
+            data-planner-slot="finger_right"
+          >
+            <span class="planner-slot-label">Right Finger</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot"
+            type="button"
+            data-planner-slot="shoulders"
+          >
+            <span class="planner-slot-label">Shoulders</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot"
+            type="button"
+            data-planner-slot="chest"
+          >
+            <span class="planner-slot-label">Chest</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot"
+            type="button"
+            data-planner-slot="back"
+          >
+            <span class="planner-slot-label">Back</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot"
+            type="button"
+            data-planner-slot="waist"
+          >
+            <span class="planner-slot-label">Waist</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot"
+            type="button"
+            data-planner-slot="legs"
+          >
+            <span class="planner-slot-label">Legs</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot"
+            type="button"
+            data-planner-slot="feet"
+          >
+            <span class="planner-slot-label">Feet</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+        </div>
+
+        <div
+          class="weapon-slot-grid"
+          aria-label="Weapon equipment slots"
+        >
+          <button
+            class="planner-slot weapon-planner-slot"
+            type="button"
+            data-planner-slot="primary"
+          >
+            <span class="planner-slot-label">Primary</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot weapon-planner-slot"
+            type="button"
+            data-planner-slot="secondary"
+          >
+            <span class="planner-slot-label">Secondary</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot weapon-planner-slot"
+            type="button"
+            data-planner-slot="range"
+          >
+            <span class="planner-slot-label">Range</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button
+            class="planner-slot weapon-planner-slot"
+            type="button"
+            data-planner-slot="ammo"
+          >
+            <span class="planner-slot-label">Ammo</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+        </div>
+
+        <div
+          class="any-slot-grid"
+          aria-label="EQL Any equipment slots"
+        >
+          <button
+            class="planner-slot any-planner-slot"
+            type="button"
+            data-planner-slot="any_1"
+          >
+            <span class="planner-slot-label">Any 1</span>
+            <span class="planner-slot-item">
+              Any equippable item
+            </span>
+          </button>
+
+          <button
+            class="planner-slot any-planner-slot"
+            type="button"
+            data-planner-slot="any_2"
+          >
+            <span class="planner-slot-label">Any 2</span>
+            <span class="planner-slot-item">
+              Any equippable item
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <section
+        class="build-summary"
+        aria-labelledby="build-summary-heading"
+      >
+        <div class="build-summary-header">
+          <div>
+            <p class="eyebrow">Calculated loadout</p>
+            <h3 id="build-summary-heading">Build Summary</h3>
+          </div>
+
+          <strong id="build-equipped-count">
+            0 / 23 slots equipped
+          </strong>
+        </div>
+
+        <div class="build-summary-grid">
+          <article class="build-summary-card">
+            <h4>Item stats</h4>
+
+            <div id="build-stat-summary">
+              <p class="muted-message">
+                Equip items to begin building a stat summary.
+              </p>
+            </div>
+          </article>
+
+          <article class="build-summary-card">
+            <h4>Effects</h4>
+
+            <div id="build-effect-summary">
+              <p class="muted-message">
+                No focus, proc, or click effects equipped.
+              </p>
+            </div>
+          </article>
+
+          <article class="build-summary-card">
+            <h4>Weapons</h4>
+
+            <div id="build-weapon-summary">
+              <p class="muted-message">
+                No weapons equipped.
+              </p>
+            </div>
+          </article>
+
+          <article class="build-summary-card">
+            <h4>Research status</h4>
+
+            <div id="build-verification-summary">
+              <p class="muted-message">
+                No equipped records to evaluate.
+              </p>
+            </div>
+          </article>
+        </div>
+      </section>
+    </section>
+
     <section class="panel">
       <div class="panel-header">
         <div>
@@ -382,7 +753,8 @@
         </div>
 
         <p class="table-help">
-          Select an item name to view gameplay details and research status.
+          Select an item name for details, or equip it directly
+          into the current build.
         </p>
       </div>
 
@@ -400,6 +772,7 @@
               <th>Effect</th>
               <th>EQL Status</th>
               <th>Confidence</th>
+              <th>Build</th>
             </tr>
           </thead>
 
@@ -454,9 +827,222 @@
       </header>
 
       <div
+        id="item-dialog-actions"
+        class="item-dialog-actions"
+      >
+        <button
+          id="equip-detail-item-button"
+          type="button"
+        >
+          Equip to Build
+        </button>
+      </div>
+
+      <div
         id="item-detail-content"
         class="item-detail-content"
       ></div>
+    </div>
+  </dialog>
+
+  <dialog
+    id="equip-slot-dialog"
+    class="item-dialog planner-dialog"
+    aria-labelledby="equip-slot-dialog-title"
+  >
+    <div class="dialog-shell">
+      <header class="dialog-header">
+        <div>
+          <p class="eyebrow">Build planner</p>
+
+          <h2 id="equip-slot-dialog-title">
+            Equip item
+          </h2>
+
+          <p
+            id="equip-slot-dialog-subtitle"
+            class="detail-subtitle"
+          >
+            Choose an equipment destination.
+          </p>
+        </div>
+
+        <button
+          id="close-equip-slot-dialog"
+          class="dialog-close-button"
+          type="button"
+        >
+          Cancel
+        </button>
+      </header>
+
+      <div class="item-detail-content">
+        <section class="equip-choice-section">
+          <h3>Normal equipment slots</h3>
+
+          <div
+            id="normal-slot-choices"
+            class="slot-choice-grid"
+          >
+            <p class="muted-message">
+              Normal slot choices will appear here.
+            </p>
+          </div>
+        </section>
+
+        <section class="equip-choice-section">
+          <h3>EQL Any slots</h3>
+
+          <p class="equip-choice-help">
+            Any normally equippable item may be placed in either
+            EQL Any slot for its full stats and effects.
+          </p>
+
+          <div
+            id="any-slot-choices"
+            class="slot-choice-grid"
+          >
+            <p class="muted-message">
+              Any-slot choices will appear here.
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog
+    id="replace-item-dialog"
+    class="item-dialog confirmation-dialog"
+    aria-labelledby="replace-item-dialog-title"
+  >
+    <div class="dialog-shell">
+      <header class="dialog-header">
+        <div>
+          <p class="eyebrow">Confirm replacement</p>
+
+          <h2 id="replace-item-dialog-title">
+            Replace equipped item?
+          </h2>
+        </div>
+      </header>
+
+      <div class="item-detail-content">
+        <p id="replace-item-message">
+          This slot already contains an item.
+        </p>
+
+        <div class="dialog-button-row">
+          <button
+            id="confirm-replace-item"
+            type="button"
+          >
+            Replace item
+          </button>
+
+          <button
+            id="cancel-replace-item"
+            type="button"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog
+    id="equipped-slot-dialog"
+    class="item-dialog planner-dialog"
+    aria-labelledby="equipped-slot-dialog-title"
+  >
+    <div class="dialog-shell">
+      <header class="dialog-header">
+        <div>
+          <p class="eyebrow">Equipped item</p>
+
+          <h2 id="equipped-slot-dialog-title">
+            Equipment slot
+          </h2>
+
+          <p
+            id="equipped-slot-dialog-subtitle"
+            class="detail-subtitle"
+          ></p>
+        </div>
+
+        <button
+          id="close-equipped-slot-dialog"
+          class="dialog-close-button"
+          type="button"
+        >
+          Close
+        </button>
+      </header>
+
+      <div class="item-detail-content">
+        <div
+          id="equipped-slot-item-content"
+          class="equipped-slot-item-content"
+        ></div>
+
+        <div class="dialog-button-row">
+          <button
+            id="view-equipped-item-button"
+            type="button"
+          >
+            View item details
+          </button>
+
+          <button
+            id="remove-equipped-item-button"
+            type="button"
+          >
+            Remove from build
+          </button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog
+    id="clear-build-dialog"
+    class="item-dialog confirmation-dialog"
+    aria-labelledby="clear-build-dialog-title"
+  >
+    <div class="dialog-shell">
+      <header class="dialog-header">
+        <div>
+          <p class="eyebrow">Build planner</p>
+
+          <h2 id="clear-build-dialog-title">
+            Clear the entire build?
+          </h2>
+        </div>
+      </header>
+
+      <div class="item-detail-content">
+        <p>
+          This removes every equipped item from the current browser build.
+          Your loot database and CSV files will not be changed.
+        </p>
+
+        <div class="dialog-button-row">
+          <button
+            id="confirm-clear-build"
+            type="button"
+          >
+            Clear build
+          </button>
+
+          <button
+            id="cancel-clear-build"
+            type="button"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   </dialog>
 
