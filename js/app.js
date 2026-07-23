@@ -6,6 +6,10 @@ import {
 } from "./csv-loader.js";
 
 import {
+  loadSchemaRegistry
+} from "./schema-registry.js";
+
+import {
   buildDatabase,
   getField,
   getPreferredClasses,
