@@ -3152,6 +3152,21 @@ function appendMutedMessage(
   container.append(paragraph);
 }
 
+function appendDiagnostic(message) {
+  const paragraph =
+    document.createElement("p");
+
+  paragraph.className =
+    "muted-message";
+
+  paragraph.textContent =
+    String(message ?? "");
+
+  elements.diagnostics.append(
+    paragraph
+  );
+}
+
 function appendCell(
   row,
   value,
