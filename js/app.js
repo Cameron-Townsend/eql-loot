@@ -99,7 +99,10 @@ state.manifest = await loadManifest();
       state.manifest
     );
 
-    const database = buildDatabase(fileResults);
+    const database = buildDatabase(
+  fileResults,
+  state.schemaRegistry
+);
 
     state.records = database.records;
     state.diagnostics = database.diagnostics;
@@ -3510,6 +3513,34 @@ function renderDiagnostics() {
     [
       "Unique records",
       state.records.length
+    ],
+        [
+      "Normalized records",
+      state.diagnostics.normalizedRecords
+    ],
+    [
+      "Normalized loot rows",
+      state.diagnostics.normalizedLootRecords
+    ],
+    [
+      "Normalized correction rows",
+      state.diagnostics.normalizedCorrectionRecords
+    ],
+    [
+      "Normalized research rows",
+      state.diagnostics.normalizedResearchRecords
+    ],
+    [
+      "Normalized metadata rows",
+      state.diagnostics.normalizedMetadataRecords
+    ],
+    [
+      "Records with unknown extensions",
+      state.diagnostics.recordsWithExtensions
+    ],
+    [
+      "Unique unknown extension fields",
+      state.diagnostics.extensionFieldCount
     ],
     [
       "Duplicate records resolved",
