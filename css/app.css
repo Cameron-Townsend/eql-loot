@@ -27,8 +27,11 @@
   --any-slot-light: #d0bbed;
   --any-slot-dark: #332b43;
 
-  --shadow: 0 12px 28px rgb(0 0 0 / 20%);
-  --shadow-strong: 0 22px 55px rgb(0 0 0 / 38%);
+  --shadow:
+    0 12px 28px rgb(0 0 0 / 20%);
+
+  --shadow-strong:
+    0 22px 55px rgb(0 0 0 / 38%);
 
   font-family:
     Inter,
@@ -80,7 +83,12 @@ select:disabled {
 .site-header,
 main,
 footer {
-  width: min(1700px, calc(100% - 2rem));
+  width:
+    min(
+      1700px,
+      calc(100% - 2rem)
+    );
+
   margin-inline: auto;
 }
 
@@ -103,8 +111,15 @@ p {
 h1 {
   margin-bottom: 0.4rem;
   color: var(--accent-light);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(2rem, 4vw, 3.4rem);
+
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size:
+    clamp(2rem, 4vw, 3.4rem);
+
   line-height: 1.05;
 }
 
@@ -144,7 +159,10 @@ h4 {
   flex: none;
   max-width: 32rem;
   margin-bottom: 0;
-  border: 1px solid var(--border);
+
+  border:
+    1px solid var(--border);
+
   border-radius: 999px;
   padding: 0.65rem 0.95rem;
   background: var(--surface);
@@ -163,16 +181,25 @@ h4 {
 
 .summary-grid {
   display: grid;
+
   grid-template-columns:
-    repeat(4, minmax(0, 1fr));
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+
   gap: 1rem;
   margin-bottom: 1rem;
 }
 
 .summary-card,
 .panel {
-  border: 1px solid var(--border);
-  background: rgb(24 29 22 / 96%);
+  border:
+    1px solid var(--border);
+
+  background:
+    rgb(24 29 22 / 96%);
+
   box-shadow: var(--shadow);
 }
 
@@ -217,8 +244,13 @@ h4 {
 
 .filter-grid {
   display: grid;
+
   grid-template-columns:
-    repeat(4, minmax(12rem, 1fr));
+    repeat(
+      4,
+      minmax(12rem, 1fr)
+    );
+
   gap: 1rem;
 }
 
@@ -237,7 +269,10 @@ input,
 select {
   width: 100%;
   min-height: 2.75rem;
-  border: 1px solid var(--border);
+
+  border:
+    1px solid var(--border);
+
   border-radius: 0.45rem;
   padding: 0.55rem 0.7rem;
   background: var(--surface-dark);
@@ -254,12 +289,18 @@ button:focus-visible,
 a:focus-visible,
 summary:focus-visible {
   border-color: var(--accent);
-  outline: 2px solid rgb(201 168 91 / 30%);
+
+  outline:
+    2px solid
+    rgb(201 168 91 / 30%);
+
   outline-offset: 2px;
 }
 
 button {
-  border: 1px solid var(--border);
+  border:
+    1px solid var(--border);
+
   border-radius: 0.45rem;
   padding: 0.65rem 0.95rem;
   background: var(--surface-raised);
@@ -300,15 +341,23 @@ button:active:not(:disabled) {
 .level-range-hint {
   grid-column: span 2;
   min-height: 2.75rem;
-  border: 1px dashed var(--border);
+
+  border:
+    1px dashed var(--border);
+
   border-radius: 0.45rem;
   padding: 0.7rem;
-  background: rgb(255 255 255 / 2%);
+
+  background:
+    rgb(255 255 255 / 2%);
 }
 
 .stat-filter-panel {
   margin: 1.25rem 0 0;
-  border: 1px solid var(--border);
+
+  border:
+    1px solid var(--border);
+
   border-radius: 0.55rem;
   padding: 1rem;
 }
@@ -346,8 +395,13 @@ button:active:not(:disabled) {
 
 .stat-options {
   display: grid;
+
   grid-template-columns:
-    repeat(auto-fit, minmax(8rem, 1fr));
+    repeat(
+      auto-fit,
+      minmax(8rem, 1fr)
+    );
+
   gap: 0.55rem;
 }
 
@@ -356,7 +410,10 @@ button:active:not(:disabled) {
   align-items: center;
   gap: 0.55rem;
   min-height: 2.5rem;
-  border: 1px solid var(--border);
+
+  border:
+    1px solid var(--border);
+
   border-radius: 0.4rem;
   padding: 0.45rem 0.65rem;
   background: var(--surface-dark);
@@ -375,7 +432,10 @@ button:active:not(:disabled) {
 
 .stat-option:has(input:checked) {
   border-color: var(--accent);
-  background: rgb(201 168 91 / 12%);
+
+  background:
+    rgb(201 168 91 / 12%);
+
   color: var(--accent-light);
 }
 
@@ -396,7 +456,10 @@ button:active:not(:disabled) {
 .table-wrapper {
   overflow: auto;
   max-height: 67vh;
-  border: 1px solid var(--border);
+
+  border:
+    1px solid var(--border);
+
   border-radius: 0.45rem;
 }
 
@@ -413,7 +476,10 @@ table {
 th,
 td {
   padding: 0.72rem;
-  border-bottom: 1px solid var(--border);
+
+  border-bottom:
+    1px solid var(--border);
+
   text-align: left;
   vertical-align: top;
 }
@@ -428,7 +494,8 @@ th {
 }
 
 tbody tr:hover {
-  background: rgb(201 168 91 / 7%);
+  background:
+    rgb(201 168 91 / 7%);
 }
 
 .item-name {
@@ -469,14 +536,18 @@ tbody tr:hover {
   min-width: 8.5rem;
   border-color: var(--accent-dark);
   padding: 0.5rem 0.65rem;
-  background: rgb(201 168 91 / 9%);
+
+  background:
+    rgb(201 168 91 / 9%);
+
   color: var(--accent-light);
   font-size: 0.78rem;
   font-weight: 700;
 }
 
 .equip-to-build-button:hover:not(:disabled) {
-  background: rgb(201 168 91 / 17%);
+  background:
+    rgb(201 168 91 / 17%);
 }
 
 .equip-to-build-button:disabled {
@@ -490,7 +561,10 @@ tbody tr:hover {
   display: inline-flex;
   align-items: center;
   max-width: 18rem;
-  border: 1px solid var(--border);
+
+  border:
+    1px solid var(--border);
+
   border-radius: 999px;
   padding: 0.28rem 0.58rem;
   font-size: 0.72rem;
@@ -500,68 +574,101 @@ tbody tr:hover {
 
 .badge-confirmed {
   border-color: #75aa6a;
-  background: rgb(117 170 106 / 14%);
+
+  background:
+    rgb(117 170 106 / 14%);
+
   color: #a8d59c;
 }
 
 .badge-modified {
   border-color: #69a8a5;
-  background: rgb(105 168 165 / 14%);
+
+  background:
+    rgb(105 168 165 / 14%);
+
   color: #9dd6d3;
 }
 
 .badge-item-confirmed,
 .badge-npc-confirmed {
   border-color: #81a7ce;
-  background: rgb(129 167 206 / 14%);
+
+  background:
+    rgb(129 167 206 / 14%);
+
   color: #b5d1ed;
 }
 
 .badge-wiki-unclear {
   border-color: #b99c65;
-  background: rgb(185 156 101 / 14%);
+
+  background:
+    rgb(185 156 101 / 14%);
+
   color: #dcc28d;
 }
 
 .badge-classic {
   border-color: #918d83;
-  background: rgb(145 141 131 / 14%);
+
+  background:
+    rgb(145 141 131 / 14%);
+
   color: #c5c0b4;
 }
 
 .badge-era {
   border-color: #9e88bd;
-  background: rgb(158 136 189 / 14%);
+
+  background:
+    rgb(158 136 189 / 14%);
+
   color: #c8b3e4;
 }
 
 .badge-removed {
   border-color: #a96f6f;
-  background: rgb(169 111 111 / 14%);
+
+  background:
+    rgb(169 111 111 / 14%);
+
   color: #dda2a2;
 }
 
 .badge-conflicting {
   border-color: #d1904c;
-  background: rgb(209 144 76 / 16%);
+
+  background:
+    rgb(209 144 76 / 16%);
+
   color: #efbd83;
 }
 
 .badge-quarantine {
   border-color: var(--danger);
-  background: rgb(223 123 112 / 16%);
+
+  background:
+    rgb(223 123 112 / 16%);
+
   color: #f1aaa2;
 }
 
 .badge-needs-verification {
   border-color: #d4b24c;
-  background: rgb(212 178 76 / 15%);
+
+  background:
+    rgb(212 178 76 / 15%);
+
   color: #ead17b;
 }
 
 .badge-neutral {
   border-color: var(--border);
-  background: rgb(255 255 255 / 4%);
+
+  background:
+    rgb(255 255 255 / 4%);
+
   color: var(--muted);
 }
 
@@ -580,18 +687,22 @@ tbody tr:hover {
 
 .fallback-error {
   margin: 1rem;
-  border: 1px solid var(--danger);
+
+  border:
+    1px solid var(--danger);
+
   border-radius: 0.45rem;
   padding: 0.8rem;
   background: var(--surface);
 }
 
 /*
- * Build planner
+ * Build / Loadout planner
  */
 
 .build-planner-panel {
   border-color: #4b573f;
+
   background:
     linear-gradient(
       145deg,
@@ -613,9 +724,11 @@ tbody tr:hover {
 
 .build-name-row {
   display: grid;
+
   grid-template-columns:
     minmax(16rem, 34rem)
     minmax(12rem, 1fr);
+
   gap: 1rem;
   align-items: end;
   margin-bottom: 1rem;
@@ -628,9 +741,12 @@ tbody tr:hover {
 }
 
 .paper-doll-layout {
-  border: 1px solid var(--border);
+  border:
+    1px solid var(--border);
+
   border-radius: 0.65rem;
   padding: 1rem;
+
   background:
     radial-gradient(
       circle at center,
@@ -642,29 +758,35 @@ tbody tr:hover {
 
 .paper-doll-grid {
   display: grid;
+
   grid-template-columns:
-    repeat(6, minmax(8rem, 1fr));
+    repeat(
+      6,
+      minmax(8rem, 1fr)
+    );
+
   gap: 0.7rem;
 }
 
+/*
+ * Officially aligned lower row:
+ * Primary, Secondary, Range, Ammo, Any 1, Any 2
+ */
 .weapon-slot-grid {
   display: grid;
+
   grid-template-columns:
-    repeat(4, minmax(10rem, 1fr));
+    repeat(
+      6,
+      minmax(8.5rem, 1fr)
+    );
+
   gap: 0.7rem;
   margin-top: 1rem;
-  border-top: 1px solid var(--border);
-  padding-top: 1rem;
-}
 
-.any-slot-grid {
-  display: grid;
-  grid-template-columns:
-    repeat(2, minmax(12rem, 19rem));
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 1rem;
-  border-top: 1px solid var(--border);
+  border-top:
+    1px solid var(--border);
+
   padding-top: 1rem;
 }
 
@@ -673,23 +795,30 @@ tbody tr:hover {
   flex-direction: column;
   justify-content: flex-start;
   align-items: stretch;
-  gap: 0.45rem;
+  gap: 0.35rem;
+
   min-width: 0;
   min-height: 6.5rem;
-  border: 1px solid var(--border);
+
+  border:
+    1px solid var(--border);
+
   border-radius: 0.55rem;
   padding: 0.75rem;
+
   background:
     linear-gradient(
       180deg,
       var(--surface-raised),
       var(--surface)
     );
+
   text-align: left;
 }
 
 .planner-slot:hover:not(:disabled) {
   border-color: var(--accent);
+
   background:
     linear-gradient(
       180deg,
@@ -700,11 +829,14 @@ tbody tr:hover {
 
 .planner-slot.is-empty {
   border-style: dashed;
-  background: rgb(255 255 255 / 2%);
+
+  background:
+    rgb(255 255 255 / 2%);
 }
 
 .planner-slot.is-occupied {
   border-color: var(--accent-dark);
+
   background:
     linear-gradient(
       180deg,
@@ -715,6 +847,7 @@ tbody tr:hover {
 
 .planner-slot.is-quarantined {
   border-color: var(--danger);
+
   background:
     linear-gradient(
       180deg,
@@ -725,7 +858,9 @@ tbody tr:hover {
 
 .planner-slot.is-missing-record {
   border-color: var(--warning);
-  background: rgb(217 164 65 / 8%);
+
+  background:
+    rgb(217 164 65 / 8%);
 }
 
 .planner-slot-label {
@@ -736,11 +871,20 @@ tbody tr:hover {
   text-transform: uppercase;
 }
 
+.planner-slot-official-name {
+  color: #898c81;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .planner-slot-item {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   min-width: 0;
+  margin-top: 0.1rem;
   color: var(--muted);
   font-size: 0.78rem;
   overflow-wrap: anywhere;
@@ -773,8 +917,8 @@ tbody tr:hover {
 }
 
 .any-planner-slot {
-  min-height: 8rem;
   border-color: #685889;
+
   background:
     linear-gradient(
       180deg,
@@ -785,6 +929,7 @@ tbody tr:hover {
 
 .any-planner-slot:hover:not(:disabled) {
   border-color: var(--any-slot-light);
+
   background:
     linear-gradient(
       180deg,
@@ -795,6 +940,7 @@ tbody tr:hover {
 
 .any-planner-slot.is-empty {
   border-color: #685889;
+
   background:
     linear-gradient(
       180deg,
@@ -805,6 +951,7 @@ tbody tr:hover {
 
 .any-planner-slot.is-occupied {
   border-color: var(--any-slot);
+
   background:
     linear-gradient(
       180deg,
@@ -819,16 +966,26 @@ tbody tr:hover {
 }
 
 .any-planner-slot
+.planner-slot-official-name {
+  color: #a998c5;
+}
+
+.any-planner-slot
 .planner-equipped-item-name {
   color: #e0d2f3;
 }
 
 .build-summary {
   margin-top: 1rem;
-  border: 1px solid var(--border);
+
+  border:
+    1px solid var(--border);
+
   border-radius: 0.65rem;
   padding: 1rem;
-  background: rgb(13 17 12 / 75%);
+
+  background:
+    rgb(13 17 12 / 75%);
 }
 
 .build-summary-header {
@@ -850,14 +1007,22 @@ tbody tr:hover {
 
 .build-summary-grid {
   display: grid;
+
   grid-template-columns:
-    repeat(2, minmax(0, 1fr));
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
   gap: 0.8rem;
 }
 
 .build-summary-card {
   min-width: 0;
-  border: 1px solid var(--border);
+
+  border:
+    1px solid var(--border);
+
   border-radius: 0.55rem;
   padding: 0.9rem;
   background: var(--surface);
@@ -865,7 +1030,10 @@ tbody tr:hover {
 
 .build-summary-card h4 {
   margin-bottom: 0.7rem;
-  border-bottom: 1px solid var(--border);
+
+  border-bottom:
+    1px solid var(--border);
+
   padding-bottom: 0.45rem;
 }
 
@@ -901,52 +1069,86 @@ details summary {
 }
 
 .item-dialog {
-  width: min(880px, calc(100% - 2rem));
-  max-height: calc(100vh - 2rem);
-  border: 1px solid var(--border);
+  width:
+    min(
+      880px,
+      calc(100% - 2rem)
+    );
+
+  max-height:
+    calc(100vh - 2rem);
+
+  border:
+    1px solid var(--border);
+
   border-radius: 0.75rem;
   padding: 0;
   background: var(--surface);
   color: var(--text);
-  box-shadow: 0 30px 80px rgb(0 0 0 / 55%);
+
+  box-shadow:
+    0 30px 80px
+    rgb(0 0 0 / 55%);
 }
 
 .item-dialog::backdrop {
-  background: rgb(0 0 0 / 72%);
+  background:
+    rgb(0 0 0 / 72%);
+
   backdrop-filter: blur(2px);
 }
 
 .planner-dialog {
-  width: min(720px, calc(100% - 2rem));
+  width:
+    min(
+      720px,
+      calc(100% - 2rem)
+    );
 }
 
 .confirmation-dialog {
-  width: min(560px, calc(100% - 2rem));
+  width:
+    min(
+      560px,
+      calc(100% - 2rem)
+    );
 }
 
 .dialog-shell {
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 2rem);
+
+  max-height:
+    calc(100vh - 2rem);
 }
 
 .dialog-header {
   position: sticky;
   top: 0;
   z-index: 2;
+
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 1rem;
-  border-bottom: 1px solid var(--border);
+
+  border-bottom:
+    1px solid var(--border);
+
   padding: 1.15rem 1.25rem;
   background: var(--surface-raised);
 }
 
 .dialog-header h2 {
   color: var(--accent-light);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(1.5rem, 3vw, 2.15rem);
+
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size:
+    clamp(1.5rem, 3vw, 2.15rem);
 }
 
 .detail-subtitle {
@@ -961,14 +1163,20 @@ details summary {
 .item-dialog-actions {
   display: flex;
   justify-content: flex-end;
-  border-bottom: 1px solid var(--border);
+
+  border-bottom:
+    1px solid var(--border);
+
   padding: 0.8rem 1.25rem;
   background: var(--surface);
 }
 
 #equip-detail-item-button {
   border-color: var(--accent-dark);
-  background: rgb(201 168 91 / 10%);
+
+  background:
+    rgb(201 168 91 / 10%);
+
   color: var(--accent-light);
   font-weight: 700;
 }
@@ -987,10 +1195,15 @@ details summary {
 
 .quarantine-warning {
   margin-bottom: 1rem;
-  border: 1px solid var(--danger);
+
+  border:
+    1px solid var(--danger);
+
   border-radius: 0.5rem;
   padding: 0.9rem;
-  background: rgb(223 123 112 / 10%);
+
+  background:
+    rgb(223 123 112 / 10%);
 }
 
 .quarantine-warning strong {
@@ -1006,14 +1219,22 @@ details summary {
 
 .quick-detail-card {
   display: grid;
+
   grid-template-columns:
-    repeat(2, minmax(0, 1fr));
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
   gap: 0.75rem;
 }
 
 .quick-field {
   min-width: 0;
-  border: 1px solid var(--border);
+
+  border:
+    1px solid var(--border);
+
   border-radius: 0.5rem;
   padding: 0.85rem;
   background: var(--surface-dark);
@@ -1042,14 +1263,13 @@ details summary {
   white-space: pre-wrap;
 }
 
-/*
- * Supports both the previous drawer names and the new app.js section names.
- */
-
 .advanced-detail-drawer,
 .detail-section {
   margin-top: 1rem;
-  border: 1px solid var(--border);
+
+  border:
+    1px solid var(--border);
+
   border-radius: 0.5rem;
   background: var(--surface-dark);
 }
@@ -1065,29 +1285,39 @@ details summary {
   cursor: pointer;
 }
 
-.advanced-detail-drawer > summary::-webkit-details-marker,
-.detail-section > summary::-webkit-details-marker {
+.advanced-detail-drawer
+> summary::-webkit-details-marker,
+.detail-section
+> summary::-webkit-details-marker {
   display: none;
 }
 
-.advanced-detail-drawer > summary::before,
-.detail-section > summary::before {
+.advanced-detail-drawer
+> summary::before,
+.detail-section
+> summary::before {
   content: "▸";
   color: var(--accent);
   font-size: 1rem;
-  transition: transform 0.15s ease;
+
+  transition:
+    transform 0.15s ease;
 }
 
-.advanced-detail-drawer[open] > summary::before,
-.detail-section[open] > summary::before {
+.advanced-detail-drawer[open]
+> summary::before,
+.detail-section[open]
+> summary::before {
   transform: rotate(90deg);
 }
 
-.detail-section > summary strong {
+.detail-section
+> summary strong {
   color: var(--accent-light);
 }
 
-.detail-section > summary span {
+.detail-section
+> summary span {
   color: var(--muted);
   font-size: 0.78rem;
   text-align: right;
@@ -1108,10 +1338,18 @@ details summary {
 .advanced-detail-content,
 .detail-section-content {
   display: grid;
+
   grid-template-columns:
-    repeat(2, minmax(0, 1fr));
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
   gap: 0.75rem;
-  border-top: 1px solid var(--border);
+
+  border-top:
+    1px solid var(--border);
+
   padding: 1rem;
 }
 
@@ -1122,15 +1360,23 @@ details summary {
 
 .detail-grid {
   display: grid;
+
   grid-template-columns:
-    repeat(2, minmax(0, 1fr));
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
   gap: 0.75rem;
   margin: 0;
 }
 
 .detail-grid > div {
   min-width: 0;
-  border: 1px solid var(--border);
+
+  border:
+    1px solid var(--border);
+
   border-radius: 0.45rem;
   padding: 0.75rem;
   background: #11160f;
@@ -1158,7 +1404,9 @@ details summary {
 }
 
 .source-links a {
-  border: 1px solid var(--border);
+  border:
+    1px solid var(--border);
+
   border-radius: 0.4rem;
   padding: 0.55rem 0.75rem;
   color: var(--accent-light);
@@ -1173,9 +1421,13 @@ details summary {
  * Equip destination dialog
  */
 
-.equip-choice-section + .equip-choice-section {
+.equip-choice-section
++ .equip-choice-section {
   margin-top: 1.25rem;
-  border-top: 1px solid var(--border);
+
+  border-top:
+    1px solid var(--border);
+
   padding-top: 1.25rem;
 }
 
@@ -1191,8 +1443,13 @@ details summary {
 
 .slot-choice-grid {
   display: grid;
+
   grid-template-columns:
-    repeat(2, minmax(0, 1fr));
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
   gap: 0.65rem;
 }
 
@@ -1201,6 +1458,7 @@ details summary {
   flex-direction: column;
   align-items: stretch;
   gap: 0.3rem;
+
   min-height: 4.5rem;
   padding: 0.75rem;
   text-align: left;
@@ -1212,12 +1470,16 @@ details summary {
 
 .slot-choice-button.is-occupied {
   border-color: var(--warning);
-  background: rgb(217 164 65 / 7%);
+
+  background:
+    rgb(217 164 65 / 7%);
 }
 
 .slot-choice-button.contains-same-item {
   border-color: var(--information);
-  background: rgb(130 169 216 / 8%);
+
+  background:
+    rgb(130 169 216 / 8%);
 }
 
 .slot-choice-name {
@@ -1235,13 +1497,17 @@ details summary {
 #any-slot-choices
 .slot-choice-button {
   border-color: #685889;
-  background: rgb(77 62 104 / 28%);
+
+  background:
+    rgb(77 62 104 / 28%);
 }
 
 #any-slot-choices
 .slot-choice-button:hover:not(:disabled) {
   border-color: var(--any-slot-light);
-  background: rgb(92 74 124 / 42%);
+
+  background:
+    rgb(92 74 124 / 42%);
 }
 
 #any-slot-choices
@@ -1260,14 +1526,20 @@ details summary {
 #confirm-replace-item,
 #confirm-clear-build {
   border-color: var(--danger);
-  background: rgb(223 123 112 / 12%);
+
+  background:
+    rgb(223 123 112 / 12%);
+
   color: #f1aaa2;
   font-weight: 700;
 }
 
 #remove-equipped-item-button {
   border-color: var(--danger);
-  background: rgb(223 123 112 / 9%);
+
+  background:
+    rgb(223 123 112 / 9%);
+
   color: #f1aaa2;
 }
 
@@ -1286,9 +1558,11 @@ details summary {
 
 .diagnostic-list {
   display: grid;
+
   grid-template-columns:
     minmax(10rem, 1fr)
     minmax(6rem, auto);
+
   gap: 0.4rem 1rem;
   max-width: 50rem;
   margin: 1rem 0 0;
@@ -1312,32 +1586,57 @@ footer {
   font-size: 0.8rem;
 }
 
+@media (max-width: 1500px) {
+  .weapon-slot-grid {
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(9rem, 1fr)
+      );
+  }
+}
+
 @media (max-width: 1350px) {
   .paper-doll-grid {
     grid-template-columns:
-      repeat(4, minmax(8rem, 1fr));
-  }
-
-  .weapon-slot-grid {
-    grid-template-columns:
-      repeat(2, minmax(10rem, 1fr));
+      repeat(
+        4,
+        minmax(8rem, 1fr)
+      );
   }
 }
 
 @media (max-width: 1120px) {
   .filter-grid {
     grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
   }
 
   .summary-grid {
     grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
   }
 
   .paper-doll-grid {
     grid-template-columns:
-      repeat(3, minmax(8rem, 1fr));
+      repeat(
+        3,
+        minmax(8rem, 1fr)
+      );
+  }
+
+  .weapon-slot-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(10rem, 1fr)
+      );
   }
 
   .build-summary-grid {
@@ -1386,16 +1685,14 @@ footer {
 
   .paper-doll-grid {
     grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
   }
 
-  .weapon-slot-grid,
-  .any-slot-grid {
+  .weapon-slot-grid {
     grid-template-columns: 1fr;
-  }
-
-  .any-slot-grid {
-    justify-content: stretch;
   }
 
   .planner-slot {
@@ -1412,13 +1709,17 @@ footer {
     grid-column: auto;
   }
 
-  .advanced-detail-drawer > summary,
-  .detail-section > summary {
-    grid-template-columns: auto 1fr;
+  .advanced-detail-drawer
+  > summary,
+  .detail-section
+  > summary {
+    grid-template-columns:
+      auto 1fr;
   }
 
   .drawer-hint,
-  .detail-section > summary span {
+  .detail-section
+  > summary span {
     grid-column: 2;
     text-align: left;
   }
@@ -1457,7 +1758,11 @@ footer {
   .site-header,
   main,
   footer {
-    width: min(100% - 1rem, 1700px);
+    width:
+      min(
+        100% - 1rem,
+        1700px
+      );
   }
 
   .site-header {
