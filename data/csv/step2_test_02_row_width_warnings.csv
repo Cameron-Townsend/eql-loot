@@ -1,4 +1,0 @@
-record_id,item_name,zone,source_npc,research_notes
-TEST-S2-010,Short Row Item,East Karana
-TEST-S2-011,Long Row Item,West Karana,a test bandit,"Normal notes",UNEXPECTED_TRAILING_VALUE
-TEST-S2-012,Normal Width Item,Everfrost,a test goblin,Normal row
