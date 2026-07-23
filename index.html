@@ -15,19 +15,27 @@
 
   <title>EverQuest Legends Loot Explorer</title>
 
-  <link rel="stylesheet" href="./css/app.css">
+  <link
+    rel="stylesheet"
+    href="./css/app.css"
+  >
 </head>
 
 <body>
   <header class="site-header">
     <div>
-      <p class="eyebrow">EQL Research Database</p>
+      <p class="eyebrow">
+        EQL Research Database
+      </p>
 
-      <h1>EverQuest Legends Loot Explorer</h1>
+      <h1>
+        EverQuest Legends Loot Explorer
+      </h1>
 
       <p class="subtitle">
-        Search EQL-first loot records, compare researched items,
-        and assemble an equipment build with EQL Any slots.
+        Search EQL-first loot records, compare researched
+        items, and assemble an equipment loadout with the
+        official EQL Any slots.
       </p>
     </div>
 
@@ -69,7 +77,10 @@
     <section class="panel">
       <div class="panel-header">
         <div>
-          <p class="eyebrow">Loot search</p>
+          <p class="eyebrow">
+            Loot search
+          </p>
+
           <h2>Filters</h2>
         </div>
 
@@ -199,9 +210,15 @@
 
           <select id="magic-filter">
             <option value="">Any</option>
-            <option value="yes">Magic only</option>
-            <option value="no">Not magic</option>
-            <option value="unknown">Unknown</option>
+            <option value="yes">
+              Magic only
+            </option>
+            <option value="no">
+              Not magic
+            </option>
+            <option value="unknown">
+              Unknown
+            </option>
           </select>
         </label>
 
@@ -210,9 +227,15 @@
 
           <select id="lore-filter">
             <option value="">Any</option>
-            <option value="yes">Lore only</option>
-            <option value="no">Not lore</option>
-            <option value="unknown">Unknown</option>
+            <option value="yes">
+              Lore only
+            </option>
+            <option value="no">
+              Not lore
+            </option>
+            <option value="unknown">
+              Unknown
+            </option>
           </select>
         </label>
 
@@ -221,9 +244,15 @@
 
           <select id="no-drop-filter">
             <option value="">Any</option>
-            <option value="yes">No Drop only</option>
-            <option value="no">Tradeable only</option>
-            <option value="unknown">Unknown</option>
+            <option value="yes">
+              No Drop only
+            </option>
+            <option value="no">
+              Tradeable only
+            </option>
+            <option value="unknown">
+              Unknown
+            </option>
           </select>
         </label>
 
@@ -232,9 +261,15 @@
 
           <select id="quest-item-filter">
             <option value="">Any</option>
-            <option value="yes">Quest items only</option>
-            <option value="no">Non-quest items</option>
-            <option value="unknown">Unknown</option>
+            <option value="yes">
+              Quest items only
+            </option>
+            <option value="no">
+              Non-quest items
+            </option>
+            <option value="unknown">
+              Unknown
+            </option>
           </select>
         </label>
 
@@ -243,11 +278,15 @@
 
           <select id="inventory-only-filter">
             <option value="">Any</option>
-            <option value="yes">Inventory only</option>
+            <option value="yes">
+              Inventory only
+            </option>
             <option value="no">
               Equippable/non-inventory
             </option>
-            <option value="unknown">Unknown</option>
+            <option value="unknown">
+              Unknown
+            </option>
           </select>
         </label>
 
@@ -256,8 +295,12 @@
 
           <select id="effect-present-filter">
             <option value="">Any</option>
-            <option value="yes">Effect present</option>
-            <option value="no">No effect listed</option>
+            <option value="yes">
+              Effect present
+            </option>
+            <option value="no">
+              No effect listed
+            </option>
           </select>
         </label>
 
@@ -341,17 +384,21 @@
             type="checkbox"
           >
 
-          <span>Approved records only</span>
+          <span>
+            Approved records only
+          </span>
         </label>
       </div>
 
       <fieldset class="stat-filter-panel">
-        <legend>Required item stats</legend>
+        <legend>
+          Required item stats
+        </legend>
 
         <div class="stat-filter-heading">
           <p>
-            Select one or more stats. Require all selected stats or
-            accept items containing any selected stat.
+            Select one or more stats. Require all selected
+            stats or accept items containing any selected stat.
           </p>
 
           <div class="stat-mode-control">
@@ -396,12 +443,18 @@
     >
       <div class="panel-header build-planner-header">
         <div>
-          <p class="eyebrow">Equipment planning</p>
-          <h2>EQL Build Planner</h2>
+          <p class="eyebrow">
+            Equipment planning
+          </p>
+
+          <h2>
+            EQL Build / Loadout Planner
+          </h2>
 
           <p class="planner-introduction">
-            Equip researched items into their normal slots or use
-            either EQL Any slot for any normally equippable item.
+            Equip researched items into their normal positions,
+            or place any normally equippable item into either
+            official EQL Any slot.
           </p>
         </div>
 
@@ -409,19 +462,19 @@
           id="clear-build-button"
           type="button"
         >
-          Clear build
+          Clear loadout
         </button>
       </div>
 
       <div class="build-name-row">
         <label>
-          Build name
+          Loadout name
 
           <input
             id="build-name-input"
             type="text"
             maxlength="80"
-            placeholder="My EQL equipment build"
+            placeholder="My EQL equipment loadout"
           >
         </label>
 
@@ -430,22 +483,27 @@
           class="build-save-status"
           aria-live="polite"
         >
-          Build saves automatically in this browser.
+          Loadout saves automatically in this browser.
         </p>
       </div>
 
       <div class="paper-doll-layout">
         <div
           class="paper-doll-grid"
-          aria-label="Equipment build slots"
+          aria-label="Equipment loadout slots"
         >
           <button
             class="planner-slot"
             type="button"
             data-planner-slot="ear_left"
           >
-            <span class="planner-slot-label">Left Ear</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Left Ear
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
@@ -453,8 +511,13 @@
             type="button"
             data-planner-slot="neck"
           >
-            <span class="planner-slot-label">Neck</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Neck
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
@@ -462,8 +525,13 @@
             type="button"
             data-planner-slot="face"
           >
-            <span class="planner-slot-label">Face</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Face
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
@@ -471,8 +539,13 @@
             type="button"
             data-planner-slot="head"
           >
-            <span class="planner-slot-label">Head</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Head
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
@@ -480,8 +553,13 @@
             type="button"
             data-planner-slot="ear_right"
           >
-            <span class="planner-slot-label">Right Ear</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Right Ear
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
@@ -489,8 +567,13 @@
             type="button"
             data-planner-slot="finger_left"
           >
-            <span class="planner-slot-label">Left Finger</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Left Finger
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
@@ -498,8 +581,13 @@
             type="button"
             data-planner-slot="wrist_left"
           >
-            <span class="planner-slot-label">Left Wrist</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Left Wrist
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
@@ -507,8 +595,13 @@
             type="button"
             data-planner-slot="arms"
           >
-            <span class="planner-slot-label">Arms</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Arms
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
@@ -516,8 +609,13 @@
             type="button"
             data-planner-slot="hands"
           >
-            <span class="planner-slot-label">Hands</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Hands
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
@@ -525,8 +623,13 @@
             type="button"
             data-planner-slot="wrist_right"
           >
-            <span class="planner-slot-label">Right Wrist</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Right Wrist
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
@@ -534,8 +637,13 @@
             type="button"
             data-planner-slot="finger_right"
           >
-            <span class="planner-slot-label">Right Finger</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Right Finger
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
@@ -543,8 +651,13 @@
             type="button"
             data-planner-slot="shoulders"
           >
-            <span class="planner-slot-label">Shoulders</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Shoulders
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
@@ -552,17 +665,32 @@
             type="button"
             data-planner-slot="chest"
           >
-            <span class="planner-slot-label">Chest</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Chest
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
             class="planner-slot"
             type="button"
             data-planner-slot="back"
+            title="Back / About Body"
           >
-            <span class="planner-slot-label">Back</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Back
+            </span>
+
+            <span class="planner-slot-official-name">
+              About Body
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
@@ -570,8 +698,13 @@
             type="button"
             data-planner-slot="waist"
           >
-            <span class="planner-slot-label">Waist</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Waist
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
@@ -579,8 +712,13 @@
             type="button"
             data-planner-slot="legs"
           >
-            <span class="planner-slot-label">Legs</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Legs
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
@@ -588,22 +726,32 @@
             type="button"
             data-planner-slot="feet"
           >
-            <span class="planner-slot-label">Feet</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Feet
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
         </div>
 
         <div
           class="weapon-slot-grid"
-          aria-label="Weapon equipment slots"
+          aria-label="Weapon, utility, and EQL Any slots"
         >
           <button
             class="planner-slot weapon-planner-slot"
             type="button"
             data-planner-slot="primary"
           >
-            <span class="planner-slot-label">Primary</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Primary
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
@@ -611,8 +759,13 @@
             type="button"
             data-planner-slot="secondary"
           >
-            <span class="planner-slot-label">Secondary</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Secondary
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
@@ -620,8 +773,13 @@
             type="button"
             data-planner-slot="range"
           >
-            <span class="planner-slot-label">Range</span>
-            <span class="planner-slot-item">Empty</span>
+            <span class="planner-slot-label">
+              Range
+            </span>
+
+            <span class="planner-slot-item">
+              Empty
+            </span>
           </button>
 
           <button
@@ -629,32 +787,48 @@
             type="button"
             data-planner-slot="ammo"
           >
-            <span class="planner-slot-label">Ammo</span>
-            <span class="planner-slot-item">Empty</span>
-          </button>
-        </div>
+            <span class="planner-slot-label">
+              Ammo
+            </span>
 
-        <div
-          class="any-slot-grid"
-          aria-label="EQL Any equipment slots"
-        >
+            <span class="planner-slot-item">
+              Empty
+            </span>
+          </button>
+
           <button
-            class="planner-slot any-planner-slot"
+            class="planner-slot weapon-planner-slot any-planner-slot"
             type="button"
             data-planner-slot="any_1"
+            title="Official EQL equipment position 0"
           >
-            <span class="planner-slot-label">Any 1</span>
+            <span class="planner-slot-label">
+              Any 1
+            </span>
+
+            <span class="planner-slot-official-name">
+              Equip 0
+            </span>
+
             <span class="planner-slot-item">
               Any equippable item
             </span>
           </button>
 
           <button
-            class="planner-slot any-planner-slot"
+            class="planner-slot weapon-planner-slot any-planner-slot"
             type="button"
             data-planner-slot="any_2"
+            title="Official EQL equipment position 21"
           >
-            <span class="planner-slot-label">Any 2</span>
+            <span class="planner-slot-label">
+              Any 2
+            </span>
+
+            <span class="planner-slot-official-name">
+              Equip 21
+            </span>
+
             <span class="planner-slot-item">
               Any equippable item
             </span>
@@ -668,8 +842,13 @@
       >
         <div class="build-summary-header">
           <div>
-            <p class="eyebrow">Calculated loadout</p>
-            <h3 id="build-summary-heading">Build Summary</h3>
+            <p class="eyebrow">
+              Calculated loadout
+            </p>
+
+            <h3 id="build-summary-heading">
+              Loadout Summary
+            </h3>
           </div>
 
           <strong id="build-equipped-count">
@@ -724,7 +903,10 @@
     <section class="panel">
       <div class="panel-header">
         <div>
-          <p class="eyebrow">Zone planning</p>
+          <p class="eyebrow">
+            Zone planning
+          </p>
+
           <h2>Matching zones</h2>
         </div>
       </div>
@@ -748,13 +930,16 @@
     <section class="panel">
       <div class="panel-header">
         <div>
-          <p class="eyebrow">Database results</p>
+          <p class="eyebrow">
+            Database results
+          </p>
+
           <h2>Matching items</h2>
         </div>
 
         <p class="table-help">
           Select an item name for details, or equip it directly
-          into the current build.
+          into the current loadout.
         </p>
       </div>
 
@@ -772,7 +957,7 @@
               <th>Effect</th>
               <th>EQL Status</th>
               <th>Confidence</th>
-              <th>Build</th>
+              <th>Loadout</th>
             </tr>
           </thead>
 
@@ -783,10 +968,14 @@
 
     <section class="panel">
       <details>
-        <summary>Database diagnostics</summary>
+        <summary>
+          Database diagnostics
+        </summary>
 
         <div id="diagnostics">
-          <p>Diagnostics will appear after loading.</p>
+          <p>
+            Diagnostics will appear after loading.
+          </p>
         </div>
       </details>
     </section>
@@ -804,7 +993,9 @@
     <div class="dialog-shell">
       <header class="dialog-header">
         <div>
-          <p class="eyebrow">Loot record</p>
+          <p class="eyebrow">
+            Loot record
+          </p>
 
           <h2 id="detail-item-name">
             Item details
@@ -834,7 +1025,7 @@
           id="equip-detail-item-button"
           type="button"
         >
-          Equip to Build
+          Equip to Loadout
         </button>
       </div>
 
@@ -853,7 +1044,9 @@
     <div class="dialog-shell">
       <header class="dialog-header">
         <div>
-          <p class="eyebrow">Build planner</p>
+          <p class="eyebrow">
+            Loadout planner
+          </p>
 
           <h2 id="equip-slot-dialog-title">
             Equip item
@@ -878,7 +1071,9 @@
 
       <div class="item-detail-content">
         <section class="equip-choice-section">
-          <h3>Normal equipment slots</h3>
+          <h3>
+            Normal equipment slots
+          </h3>
 
           <div
             id="normal-slot-choices"
@@ -891,7 +1086,9 @@
         </section>
 
         <section class="equip-choice-section">
-          <h3>EQL Any slots</h3>
+          <h3>
+            EQL Any slots
+          </h3>
 
           <p class="equip-choice-help">
             Any normally equippable item may be placed in either
@@ -919,7 +1116,9 @@
     <div class="dialog-shell">
       <header class="dialog-header">
         <div>
-          <p class="eyebrow">Confirm replacement</p>
+          <p class="eyebrow">
+            Confirm replacement
+          </p>
 
           <h2 id="replace-item-dialog-title">
             Replace equipped item?
@@ -959,7 +1158,9 @@
     <div class="dialog-shell">
       <header class="dialog-header">
         <div>
-          <p class="eyebrow">Equipped item</p>
+          <p class="eyebrow">
+            Equipped item
+          </p>
 
           <h2 id="equipped-slot-dialog-title">
             Equipment slot
@@ -998,7 +1199,7 @@
             id="remove-equipped-item-button"
             type="button"
           >
-            Remove from build
+            Remove from loadout
           </button>
         </div>
       </div>
@@ -1013,18 +1214,21 @@
     <div class="dialog-shell">
       <header class="dialog-header">
         <div>
-          <p class="eyebrow">Build planner</p>
+          <p class="eyebrow">
+            Loadout planner
+          </p>
 
           <h2 id="clear-build-dialog-title">
-            Clear the entire build?
+            Clear the entire loadout?
           </h2>
         </div>
       </header>
 
       <div class="item-detail-content">
         <p>
-          This removes every equipped item from the current browser build.
-          Your loot database and CSV files will not be changed.
+          This removes every equipped item from the current
+          browser loadout. Your loot database and CSV files
+          will not be changed.
         </p>
 
         <div class="dialog-button-row">
@@ -1032,7 +1236,7 @@
             id="confirm-clear-build"
             type="button"
           >
-            Clear build
+            Clear loadout
           </button>
 
           <button
