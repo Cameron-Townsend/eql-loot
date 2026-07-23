@@ -12,7 +12,6 @@ import {
   getPreferredNpcLevel,
   getPreferredRaces,
   getPreferredSourceLinks,
-  getPreferredStats,
   getVerificationBadgeClass,
   hasValue,
   isQuarantined,
@@ -28,13 +27,42 @@ import {
   getZoneSummary
 } from "./filters.js";
 
+import {
+  PLANNER_SLOTS,
+  getCompactWeaponDisplay,
+  getItemStatsDisplay,
+  getNativeSlotDisplay,
+  getNormalPlannerSlots,
+  getPlannerSlotLabel,
+  getWeaponSkill,
+  isAnyPlannerSlot,
+  isNormallyEquippable
+} from "./item-rules.js";
+
+import {
+  clearBuild,
+  equipRecord,
+  getBuildDiagnostics,
+  getDestinationChoices,
+  getEquippedRecord,
+  getOccupiedSlotEntries,
+  loadBuild,
+  removeFromSlot,
+  setBuildName
+} from "./build-planner.js";
+
 const state = {
   manifest: null,
   records: [],
   filteredRecords: [],
   diagnostics: null,
   selectedStats: new Set(),
-  recordsById: new Map()
+  recordsById: new Map(),
+  build: null,
+  pendingEquipRecord: null,
+  pendingReplace: null,
+  selectedPlannerSlot: null,
+  currentDetailRecord: null
 };
 
 const elements = {};
@@ -70,6 +98,8 @@ async function initialize() {
       ])
     );
 
+    state.build = loadBuild();
+
     const filterOptions =
       createFilterOptions(state.records);
 
@@ -77,6 +107,7 @@ async function initialize() {
     renderStatOptions(filterOptions.stats);
 
     applyCurrentFilters();
+    renderBuildPlanner();
     renderDiagnostics();
 
     updateStatus(
@@ -209,6 +240,36 @@ function captureElements() {
   elements.diagnostics =
     document.querySelector("#diagnostics");
 
+  elements.buildNameInput =
+    document.querySelector("#build-name-input");
+
+  elements.buildSaveStatus =
+    document.querySelector("#build-save-status");
+
+  elements.clearBuildButton =
+    document.querySelector("#clear-build-button");
+
+  elements.buildEquippedCount =
+    document.querySelector("#build-equipped-count");
+
+  elements.buildStatSummary =
+    document.querySelector("#build-stat-summary");
+
+  elements.buildEffectSummary =
+    document.querySelector("#build-effect-summary");
+
+  elements.buildWeaponSummary =
+    document.querySelector("#build-weapon-summary");
+
+  elements.buildVerificationSummary =
+    document.querySelector("#build-verification-summary");
+
+  elements.plannerSlots = [
+    ...document.querySelectorAll(
+      "[data-planner-slot]"
+    )
+  ];
+
   elements.itemDialog =
     document.querySelector("#item-dialog");
 
@@ -223,11 +284,80 @@ function captureElements() {
 
   elements.itemDetailContent =
     document.querySelector("#item-detail-content");
+
+  elements.equipDetailItemButton =
+    document.querySelector("#equip-detail-item-button");
+
+  elements.equipSlotDialog =
+    document.querySelector("#equip-slot-dialog");
+
+  elements.equipSlotDialogTitle =
+    document.querySelector("#equip-slot-dialog-title");
+
+  elements.equipSlotDialogSubtitle =
+    document.querySelector("#equip-slot-dialog-subtitle");
+
+  elements.closeEquipSlotDialog =
+    document.querySelector("#close-equip-slot-dialog");
+
+  elements.normalSlotChoices =
+    document.querySelector("#normal-slot-choices");
+
+  elements.anySlotChoices =
+    document.querySelector("#any-slot-choices");
+
+  elements.replaceItemDialog =
+    document.querySelector("#replace-item-dialog");
+
+  elements.replaceItemMessage =
+    document.querySelector("#replace-item-message");
+
+  elements.confirmReplaceItem =
+    document.querySelector("#confirm-replace-item");
+
+  elements.cancelReplaceItem =
+    document.querySelector("#cancel-replace-item");
+
+  elements.equippedSlotDialog =
+    document.querySelector("#equipped-slot-dialog");
+
+  elements.equippedSlotDialogTitle =
+    document.querySelector("#equipped-slot-dialog-title");
+
+  elements.equippedSlotDialogSubtitle =
+    document.querySelector("#equipped-slot-dialog-subtitle");
+
+  elements.equippedSlotItemContent =
+    document.querySelector("#equipped-slot-item-content");
+
+  elements.viewEquippedItemButton =
+    document.querySelector("#view-equipped-item-button");
+
+  elements.removeEquippedItemButton =
+    document.querySelector("#remove-equipped-item-button");
+
+  elements.closeEquippedSlotDialog =
+    document.querySelector("#close-equipped-slot-dialog");
+
+  elements.clearBuildDialog =
+    document.querySelector("#clear-build-dialog");
+
+  elements.confirmClearBuild =
+    document.querySelector("#confirm-clear-build");
+
+  elements.cancelClearBuild =
+    document.querySelector("#cancel-clear-build");
 }
 
 function validateRequiredElements() {
   const missingElements = Object.entries(elements)
-    .filter(([, element]) => element === null)
+    .filter(([, element]) => {
+      if (Array.isArray(element)) {
+        return element.length === 0;
+      }
+
+      return element === null;
+    })
     .map(([name]) => name);
 
   if (missingElements.length > 0) {
@@ -308,13 +438,96 @@ function bindEvents() {
     "click",
     handleDialogBackdropClick
   );
+
+  elements.equipDetailItemButton.addEventListener(
+    "click",
+    handleDetailEquipClick
+  );
+
+  elements.buildNameInput.addEventListener(
+    "input",
+    handleBuildNameInput
+  );
+
+  elements.clearBuildButton.addEventListener(
+    "click",
+    () => elements.clearBuildDialog.showModal()
+  );
+
+  for (const slotButton of elements.plannerSlots) {
+    slotButton.addEventListener(
+      "click",
+      handlePlannerSlotClick
+    );
+  }
+
+  elements.normalSlotChoices.addEventListener(
+    "click",
+    handleDestinationChoiceClick
+  );
+
+  elements.anySlotChoices.addEventListener(
+    "click",
+    handleDestinationChoiceClick
+  );
+
+  elements.closeEquipSlotDialog.addEventListener(
+    "click",
+    closeEquipSlotDialog
+  );
+
+  elements.confirmReplaceItem.addEventListener(
+    "click",
+    confirmPendingReplacement
+  );
+
+  elements.cancelReplaceItem.addEventListener(
+    "click",
+    cancelPendingReplacement
+  );
+
+  elements.closeEquippedSlotDialog.addEventListener(
+    "click",
+    closeEquippedSlotDialog
+  );
+
+  elements.viewEquippedItemButton.addEventListener(
+    "click",
+    viewSelectedEquippedItem
+  );
+
+  elements.removeEquippedItemButton.addEventListener(
+    "click",
+    removeSelectedEquippedItem
+  );
+
+  elements.confirmClearBuild.addEventListener(
+    "click",
+    confirmClearBuild
+  );
+
+  elements.cancelClearBuild.addEventListener(
+    "click",
+    () => elements.clearBuildDialog.close()
+  );
+
+  for (const dialog of [
+    elements.equipSlotDialog,
+    elements.replaceItemDialog,
+    elements.equippedSlotDialog,
+    elements.clearBuildDialog
+  ]) {
+    dialog.addEventListener(
+      "click",
+      handleGenericDialogBackdropClick
+    );
+  }
 }
 
 function handleFilterChange() {
   updateEffectFilterAvailability();
   applyCurrentFilters();
 }
-
 function populateFilters(options) {
   populateSelect(
     elements.continent,
@@ -494,6 +707,7 @@ function updateEffectFilterAvailability() {
     elements.focusEffect.value = "";
   }
 }
+
 function getCurrentFilters() {
   return {
     search: elements.search.value,
@@ -761,21 +975,22 @@ function populateConditionalSelect(
     optionMap.set(selectedValue, 0);
   }
 
-  const sortedOptions = [...optionMap.entries()]
-    .sort((left, right) =>
-      naturalCompare(left[0], right[0])
-    );
+  const sortedOptions =
+    [...optionMap.entries()]
+      .sort((left, right) =>
+        naturalCompare(left[0], right[0])
+      );
 
   for (const [value, count] of sortedOptions) {
-    const label =
+    const option =
+      document.createElement("option");
+
+    option.value = value;
+
+    option.textContent =
       count > 0
         ? `${value} (${count})`
         : `${value} (0 matches)`;
-
-    const option = document.createElement("option");
-
-    option.value = value;
-    option.textContent = label;
 
     if (
       count === 0 &&
@@ -823,16 +1038,18 @@ function populateConditionalVerificationSelect(
     optionMap.set(selectedValue, 0);
   }
 
-  for (
-    const [value, count]
-    of [...optionMap.entries()].sort(
-      (left, right) =>
+  const sortedOptions =
+    [...optionMap.entries()]
+      .sort((left, right) =>
         naturalCompare(left[0], right[0])
-    )
-  ) {
-    const option = document.createElement("option");
+      );
+
+  for (const [value, count] of sortedOptions) {
+    const option =
+      document.createElement("option");
 
     option.value = value;
+
     option.textContent =
       count > 0
         ? `${value} (${count})`
@@ -867,11 +1084,16 @@ function populateBooleanSelect(
     defaultLabel
   );
 
-  for (const [value, label] of Object.entries(labels)) {
+  for (
+    const [value, label]
+    of Object.entries(labels)
+  ) {
     const count = counts[value] ?? 0;
-    const option = document.createElement("option");
+    const option =
+      document.createElement("option");
 
     option.value = value;
+
     option.textContent =
       count > 0
         ? `${label} (${count})`
@@ -888,6 +1110,44 @@ function populateBooleanSelect(
   }
 
   select.value = selectedValue || "";
+}
+
+function renderStatOptions(stats) {
+  elements.statOptions.replaceChildren();
+
+  if (stats.length === 0) {
+    const message =
+      document.createElement("p");
+
+    message.className = "muted-message";
+    message.textContent =
+      "No recognized stat values were found.";
+
+    elements.statOptions.append(message);
+    return;
+  }
+
+  for (const stat of stats) {
+    const label =
+      document.createElement("label");
+
+    const checkbox =
+      document.createElement("input");
+
+    const text =
+      document.createElement("span");
+
+    label.className = "stat-option";
+
+    checkbox.type = "checkbox";
+    checkbox.value = stat;
+    checkbox.dataset.statFilter = "true";
+
+    text.textContent = stat;
+
+    label.append(checkbox, text);
+    elements.statOptions.append(label);
+  }
 }
 
 function renderConditionalStatOptions(options) {
@@ -907,7 +1167,8 @@ function renderConditionalStatOptions(options) {
   }
 
   if (optionMap.size === 0) {
-    const message = document.createElement("p");
+    const message =
+      document.createElement("p");
 
     message.className = "muted-message";
     message.textContent =
@@ -917,16 +1178,21 @@ function renderConditionalStatOptions(options) {
     return;
   }
 
-  for (
-    const [stat, count]
-    of [...optionMap.entries()].sort(
-      (left, right) =>
+  const sortedOptions =
+    [...optionMap.entries()]
+      .sort((left, right) =>
         naturalCompare(left[0], right[0])
-    )
-  ) {
-    const label = document.createElement("label");
-    const checkbox = document.createElement("input");
-    const text = document.createElement("span");
+      );
+
+  for (const [stat, count] of sortedOptions) {
+    const label =
+      document.createElement("label");
+
+    const checkbox =
+      document.createElement("input");
+
+    const text =
+      document.createElement("span");
 
     const isSelected =
       state.selectedStats.has(stat);
@@ -934,15 +1200,19 @@ function renderConditionalStatOptions(options) {
     label.className = "stat-option";
 
     if (count === 0) {
-      label.classList.add("is-unavailable");
+      label.classList.add(
+        "is-unavailable"
+      );
     }
 
     checkbox.type = "checkbox";
     checkbox.value = stat;
     checkbox.dataset.statFilter = "true";
     checkbox.checked = isSelected;
+
     checkbox.disabled =
-      count === 0 && !isSelected;
+      count === 0 &&
+      !isSelected;
 
     text.textContent =
       count > 0
@@ -952,6 +1222,34 @@ function renderConditionalStatOptions(options) {
     label.append(checkbox, text);
     elements.statOptions.append(label);
   }
+}
+
+function handleStatSelection(event) {
+  const checkbox = event.target.closest(
+    'input[data-stat-filter="true"]'
+  );
+
+  if (!checkbox) {
+    return;
+  }
+
+  if (checkbox.checked) {
+    state.selectedStats.add(
+      checkbox.value
+    );
+  } else {
+    state.selectedStats.delete(
+      checkbox.value
+    );
+  }
+
+  applyCurrentFilters();
+}
+
+function clearStatFilters() {
+  state.selectedStats.clear();
+
+  applyCurrentFilters();
 }
 
 function updateNpcLevelHint(range) {
@@ -975,70 +1273,6 @@ function updateNpcLevelHint(range) {
     `${range.recordCount} candidate record` +
     `${range.recordCount === 1 ? "" : "s"}.`;
 }
-function renderStatOptions(stats) {
-  elements.statOptions.replaceChildren();
-
-  if (stats.length === 0) {
-    const message = document.createElement("p");
-
-    message.className = "muted-message";
-    message.textContent =
-      "No recognized stat values were found.";
-
-    elements.statOptions.append(message);
-    return;
-  }
-
-  for (const stat of stats) {
-    const label = document.createElement("label");
-    const checkbox = document.createElement("input");
-    const text = document.createElement("span");
-
-    label.className = "stat-option";
-
-    checkbox.type = "checkbox";
-    checkbox.value = stat;
-    checkbox.dataset.statFilter = "true";
-
-    text.textContent = stat;
-
-    label.append(checkbox, text);
-    elements.statOptions.append(label);
-  }
-}
-
-function handleStatSelection(event) {
-  const checkbox = event.target.closest(
-    'input[data-stat-filter="true"]'
-  );
-
-  if (!checkbox) {
-    return;
-  }
-
-  if (checkbox.checked) {
-    state.selectedStats.add(checkbox.value);
-  } else {
-    state.selectedStats.delete(checkbox.value);
-  }
-
-  applyCurrentFilters();
-}
-
-function clearStatFilters() {
-  state.selectedStats.clear();
-
-  const checkboxes =
-    elements.statOptions.querySelectorAll(
-      'input[data-stat-filter="true"]'
-    );
-
-  for (const checkbox of checkboxes) {
-    checkbox.checked = false;
-  }
-
-  applyCurrentFilters();
-}
 
 function applyCurrentFilters() {
   const filters = getCurrentFilters();
@@ -1048,21 +1282,23 @@ function applyCurrentFilters() {
     filters
   );
 
-  state.filteredRecords.sort((left, right) => {
-    const zoneComparison = naturalCompare(
-      getField(left, "zone"),
-      getField(right, "zone")
-    );
+  state.filteredRecords.sort(
+    (left, right) => {
+      const zoneComparison = naturalCompare(
+        getField(left, "zone"),
+        getField(right, "zone")
+      );
 
-    if (zoneComparison !== 0) {
-      return zoneComparison;
+      if (zoneComparison !== 0) {
+        return zoneComparison;
+      }
+
+      return naturalCompare(
+        getField(left, "itemName"),
+        getField(right, "itemName")
+      );
     }
-
-    return naturalCompare(
-      getField(left, "itemName"),
-      getField(right, "itemName")
-    );
-  });
+  );
 
   refreshConditionalFilters(filters);
   renderResults();
@@ -1076,16 +1312,24 @@ function renderResults() {
   const maximumRows = 500;
 
   const displayedRecords =
-    state.filteredRecords.slice(0, maximumRows);
+    state.filteredRecords.slice(
+      0,
+      maximumRows
+    );
 
   for (const record of displayedRecords) {
-    const row = document.createElement("tr");
+    const row =
+      document.createElement("tr");
 
-    const itemCell = document.createElement("td");
-    const itemButton = document.createElement("button");
+    const itemCell =
+      document.createElement("td");
+
+    const itemButton =
+      document.createElement("button");
 
     itemButton.type = "button";
-    itemButton.className = "item-link-button";
+    itemButton.className =
+      "item-link-button";
 
     itemButton.dataset.recordId =
       getField(record, "recordId");
@@ -1110,7 +1354,8 @@ function renderResults() {
 
     appendCell(
       row,
-      getPreferredStats(record)
+      getItemStatsDisplay(record),
+      "item-stats-cell"
     );
 
     appendCell(
@@ -1135,7 +1380,10 @@ function renderResults() {
 
     appendBadgeCell(
       row,
-      getField(record, "verificationStatus")
+      getField(
+        record,
+        "verificationStatus"
+      )
     );
 
     appendCell(
@@ -1143,14 +1391,20 @@ function renderResults() {
       getField(record, "confidence")
     );
 
+    appendEquipCell(row, record);
+
     elements.resultsBody.append(row);
   }
 
   if (displayedRecords.length === 0) {
-    const row = document.createElement("tr");
-    const cell = document.createElement("td");
+    const row =
+      document.createElement("tr");
 
-    cell.colSpan = 10;
+    const cell =
+      document.createElement("td");
+
+    cell.colSpan = 11;
+
     cell.textContent =
       "No loot records match the active filters.";
 
@@ -1159,16 +1413,52 @@ function renderResults() {
   }
 }
 
+function appendEquipCell(row, record) {
+  const cell =
+    document.createElement("td");
+
+  cell.className = "equip-action-cell";
+
+  const button =
+    document.createElement("button");
+
+  button.type = "button";
+
+  if (isNormallyEquippable(record)) {
+    button.className =
+      "equip-to-build-button";
+
+    button.dataset.equipRecordId =
+      getField(record, "recordId");
+
+    button.textContent =
+      "Equip to Build";
+  } else {
+    button.className =
+      "equip-to-build-button";
+
+    button.disabled = true;
+    button.textContent =
+      "Not equippable";
+  }
+
+  cell.append(button);
+  row.append(cell);
+}
 function appendBadgeCell(row, status) {
-  const cell = document.createElement("td");
-  const badge = createVerificationBadge(status);
+  const cell =
+    document.createElement("td");
+
+  const badge =
+    createVerificationBadge(status);
 
   cell.append(badge);
   row.append(cell);
 }
 
 function createVerificationBadge(status) {
-  const badge = document.createElement("span");
+  const badge =
+    document.createElement("span");
 
   badge.className = [
     "verification-badge",
@@ -1189,7 +1479,8 @@ function renderZoneSummary() {
   elements.zoneSummaryBody.replaceChildren();
 
   for (const summary of summaries) {
-    const row = document.createElement("tr");
+    const row =
+      document.createElement("tr");
 
     appendCell(row, summary.zone);
     appendCell(row, summary.itemCount);
@@ -1200,10 +1491,14 @@ function renderZoneSummary() {
   }
 
   if (summaries.length === 0) {
-    const row = document.createElement("tr");
-    const cell = document.createElement("td");
+    const row =
+      document.createElement("tr");
+
+    const cell =
+      document.createElement("td");
 
     cell.colSpan = 4;
+
     cell.textContent =
       "No zones match the active filters.";
 
@@ -1213,16 +1508,33 @@ function renderZoneSummary() {
 }
 
 function handleResultClick(event) {
-  const button = event.target.closest(
-    "button[data-record-id]"
+  const equipButton = event.target.closest(
+    "button[data-equip-record-id]"
   );
 
-  if (!button) {
+  if (equipButton) {
+    const record = state.recordsById.get(
+      equipButton.dataset.equipRecordId
+    );
+
+    if (record) {
+      openEquipSlotDialog(record);
+    }
+
     return;
   }
 
-  const record =
-    state.recordsById.get(button.dataset.recordId);
+  const itemButton = event.target.closest(
+    "button[data-record-id]"
+  );
+
+  if (!itemButton) {
+    return;
+  }
+
+  const record = state.recordsById.get(
+    itemButton.dataset.recordId
+  );
 
   if (!record) {
     return;
@@ -1230,7 +1542,21 @@ function handleResultClick(event) {
 
   openItemDetails(record);
 }
+
+function handleDetailEquipClick() {
+  if (!state.currentDetailRecord) {
+    return;
+  }
+
+  closeItemDetails();
+  openEquipSlotDialog(
+    state.currentDetailRecord
+  );
+}
+
 function openItemDetails(record) {
+  state.currentDetailRecord = record;
+
   const itemName =
     getField(record, "itemName") ||
     "Unnamed item";
@@ -1253,7 +1579,8 @@ function openItemDetails(record) {
   const normalizedFocusEffects =
     getRecordFocusEffects(record);
 
-  elements.detailItemName.textContent = itemName;
+  elements.detailItemName.textContent =
+    itemName;
 
   elements.detailItemSubtitle.textContent = [
     slot,
@@ -1263,15 +1590,28 @@ function openItemDetails(record) {
     .filter(Boolean)
     .join(" • ");
 
+  elements.equipDetailItemButton.disabled =
+    !isNormallyEquippable(record);
+
+  elements.equipDetailItemButton.textContent =
+    isNormallyEquippable(record)
+      ? "Equip to Build"
+      : "Not equippable";
+
   elements.itemDetailContent.replaceChildren();
 
-  const statusRow = document.createElement("div");
+  const statusRow =
+    document.createElement("div");
 
-  statusRow.className = "popup-status-row";
+  statusRow.className =
+    "popup-status-row";
 
   statusRow.append(
     createVerificationBadge(
-      getField(record, "verificationStatus")
+      getField(
+        record,
+        "verificationStatus"
+      )
     )
   );
 
@@ -1291,7 +1631,9 @@ function openItemDetails(record) {
     statusRow.append(confidenceBadge);
   }
 
-  elements.itemDetailContent.append(statusRow);
+  elements.itemDetailContent.append(
+    statusRow
+  );
 
   if (isQuarantined(record)) {
     appendQuarantineWarning(
@@ -1302,7 +1644,8 @@ function openItemDetails(record) {
   const quickCard =
     document.createElement("section");
 
-  quickCard.className = "quick-detail-card";
+  quickCard.className =
+    "quick-detail-card";
 
   appendQuickField(
     quickCard,
@@ -1313,7 +1656,7 @@ function openItemDetails(record) {
   appendQuickField(
     quickCard,
     "EQL stats",
-    getPreferredStats(record),
+    getItemStatsDisplay(record),
     "quick-field-wide"
   );
 
@@ -1369,6 +1712,12 @@ function openItemDetails(record) {
 
   appendQuickField(
     quickCard,
+    "Weapon skill",
+    getWeaponSkill(record)
+  );
+
+  appendQuickField(
+    quickCard,
     "Drop frequency",
     combineValues(
       getField(record, "dropFrequency"),
@@ -1383,7 +1732,9 @@ function openItemDetails(record) {
     "quick-field-wide"
   );
 
-  elements.itemDetailContent.append(quickCard);
+  elements.itemDetailContent.append(
+    quickCard
+  );
 
   appendExpandableSection(
     elements.itemDetailContent,
@@ -1396,7 +1747,10 @@ function openItemDetails(record) {
       ],
       [
         "Placeholder level range",
-        getField(record, "placeholderLevelRange")
+        getField(
+          record,
+          "placeholderLevelRange"
+        )
       ],
       [
         "Respawn timer",
@@ -1408,7 +1762,10 @@ function openItemDetails(record) {
       ],
       [
         "Nearby enemy levels",
-        getField(record, "nearbyEnemyLevelRange")
+        getField(
+          record,
+          "nearbyEnemyLevelRange"
+        )
       ],
       [
         "Spawn type",
@@ -1416,7 +1773,10 @@ function openItemDetails(record) {
       ],
       [
         "Special abilities",
-        getField(record, "specialAbilities")
+        getField(
+          record,
+          "specialAbilities"
+        )
       ],
       [
         "Add risk",
@@ -1424,12 +1784,18 @@ function openItemDetails(record) {
       ],
       [
         "Faction consequences",
-        getField(record, "factionConsequences")
+        getField(
+          record,
+          "factionConsequences"
+        )
       ],
       [
         "Drop-rate notes",
         combineValues(
-          getField(record, "dropRateReported"),
+          getField(
+            record,
+            "dropRateReported"
+          ),
           getField(record, "dropNotes")
         )
       ]
@@ -1455,15 +1821,24 @@ function openItemDetails(record) {
       ],
       [
         "Effect-transfer value",
-        getField(record, "effectTransferValue")
+        getField(
+          record,
+          "effectTransferValue"
+        )
       ],
       [
         "Effect extractable",
-        getField(record, "effectExtractable")
+        getField(
+          record,
+          "effectExtractable"
+        )
       ],
       [
         "Effect extraction rank",
-        getField(record, "effectExtractionRank")
+        getField(
+          record,
+          "effectExtractionRank"
+        )
       ],
       [
         "Upgradeable",
@@ -1471,19 +1846,31 @@ function openItemDetails(record) {
       ],
       [
         "Maximum upgrade rank",
-        getField(record, "maximumUpgradeRank")
+        getField(
+          record,
+          "maximumUpgradeRank"
+        )
       ],
       [
         "Duplicate-farming value",
-        getField(record, "duplicateFarmingValue")
+        getField(
+          record,
+          "duplicateFarmingValue"
+        )
       ],
       [
         "Challenge tier observed",
-        getField(record, "challengeTierObserved")
+        getField(
+          record,
+          "challengeTierObserved"
+        )
       ],
       [
         "Personal loot confirmed",
-        getField(record, "personalLootConfirmed")
+        getField(
+          record,
+          "personalLootConfirmed"
+        )
       ]
     ]
   );
@@ -1499,7 +1886,10 @@ function openItemDetails(record) {
       ],
       [
         "Classic classes",
-        getField(record, "classesClassic")
+        getField(
+          record,
+          "classesClassic"
+        )
       ],
       [
         "Classic races",
@@ -1507,7 +1897,10 @@ function openItemDetails(record) {
       ],
       [
         "Classic NPC level",
-        getField(record, "sourceNpcLevelClassic")
+        getField(
+          record,
+          "sourceNpcLevelClassic"
+        )
       ],
       [
         "Era status",
@@ -1515,7 +1908,10 @@ function openItemDetails(record) {
       ],
       [
         "Classic baseline notes",
-        getField(record, "classicBaselineNotes")
+        getField(
+          record,
+          "classicBaselineNotes"
+        )
       ]
     ]
   );
@@ -1523,230 +1919,6 @@ function openItemDetails(record) {
   appendResearchSection(record);
 
   elements.itemDialog.showModal();
-}
-
-function appendQuarantineWarning(container) {
-  const warning = document.createElement("aside");
-  const heading = document.createElement("strong");
-  const body = document.createElement("p");
-
-  warning.className = "quarantine-warning";
-
-  heading.textContent =
-    "Quarantined research record";
-
-  body.textContent =
-    "This item or drop source is retained as classic or investigative " +
-    "research, but it is not currently confirmed for EverQuest Legends.";
-
-  warning.append(heading, body);
-  container.append(warning);
-}
-
-function appendResearchSection(record) {
-  const fields = [
-    [
-      "Last checked",
-      getField(record, "eqlLastChecked")
-    ],
-    [
-      "Official patch date",
-      getField(record, "officialPatchDate")
-    ],
-    [
-      "Evidence strength",
-      getField(record, "evidenceStrength")
-    ],
-    [
-      "Current-build confirmed",
-      getField(record, "currentBuildConfirmed")
-    ],
-    [
-      "Conflict status",
-      getField(record, "conflictStatus")
-    ],
-    [
-      "Audit action",
-      getField(record, "auditAction")
-    ],
-    [
-      "Change summary",
-      getField(record, "eqlChangesSummary")
-    ],
-    [
-      "Verification notes",
-      getField(record, "eqlVerificationNotes")
-    ],
-    [
-      "Research notes",
-      getField(record, "researchNotes")
-    ],
-    [
-      "Revision",
-      getField(record, "revision")
-    ],
-    [
-      "Approved",
-      getField(record, "approved")
-    ],
-    [
-      "Source file",
-      record.__sourceFile
-    ]
-  ];
-
-  const links =
-    getPreferredSourceLinks(record);
-
-  const evidenceCount =
-    record.__evidence?.length ?? 0;
-
-  const historyCount =
-    record.__changeHistory?.length ?? 0;
-
-  if (evidenceCount > 0) {
-    fields.push([
-      "Attached evidence records",
-      String(evidenceCount)
-    ]);
-  }
-
-  if (historyCount > 0) {
-    fields.push([
-      "Attached change-history records",
-      String(historyCount)
-    ]);
-  }
-
-  appendExpandableSection(
-    elements.itemDetailContent,
-    "Research & Sources",
-    "Verification, conflicts, provenance, and research notes",
-    fields,
-    links
-  );
-}
-
-function appendExpandableSection(
-  container,
-  title,
-  hint,
-  fields,
-  links = []
-) {
-  const populatedFields = fields.filter(
-    ([, value]) => hasValue(value)
-  );
-
-  if (
-    populatedFields.length === 0 &&
-    links.length === 0
-  ) {
-    return;
-  }
-
-  const drawer = document.createElement("details");
-  const summary = document.createElement("summary");
-  const label = document.createElement("span");
-  const hintElement = document.createElement("span");
-  const content = document.createElement("div");
-
-  drawer.className = "advanced-detail-drawer";
-
-  label.className = "drawer-label";
-  label.textContent = title;
-
-  hintElement.className = "drawer-hint";
-  hintElement.textContent = hint;
-
-  summary.append(label, hintElement);
-  drawer.append(summary);
-
-  content.className = "advanced-detail-content";
-
-  if (populatedFields.length > 0) {
-    const grid = document.createElement("dl");
-
-    grid.className = "detail-grid";
-
-    for (const [fieldLabel, value] of populatedFields) {
-      const item = document.createElement("div");
-      const term = document.createElement("dt");
-      const description = document.createElement("dd");
-
-      term.textContent = fieldLabel;
-      description.textContent = String(value);
-
-      item.append(term, description);
-      grid.append(item);
-    }
-
-    content.append(grid);
-  }
-
-  if (links.length > 0) {
-    const sourceHeading =
-      document.createElement("h3");
-
-    const sourceLinks =
-      document.createElement("div");
-
-    sourceHeading.textContent = "Source links";
-    sourceLinks.className = "source-links";
-
-    for (const linkData of links) {
-      const link = document.createElement("a");
-
-      link.href = linkData.url;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.textContent = linkData.label;
-
-      sourceLinks.append(link);
-    }
-
-    content.append(
-      sourceHeading,
-      sourceLinks
-    );
-  }
-
-  drawer.append(content);
-  container.append(drawer);
-}
-
-function appendQuickField(
-  container,
-  label,
-  value,
-  className = ""
-) {
-  if (!hasValue(value)) {
-    return;
-  }
-
-  const field = document.createElement("div");
-  const term = document.createElement("span");
-  const content = document.createElement("strong");
-
-  field.className = "quick-field";
-
-  if (className) {
-    field.classList.add(className);
-  }
-
-  term.textContent = label;
-  content.textContent = String(value);
-
-  field.append(term, content);
-  container.append(field);
-}
-
-function combineValues(...values) {
-  return values
-    .filter(value => hasValue(value))
-    .map(value => String(value).trim())
-    .join(" • ");
 }
 
 function closeItemDetails() {
@@ -1759,136 +1931,1444 @@ function handleDialogBackdropClick(event) {
   }
 }
 
+function openEquipSlotDialog(record) {
+  if (!isNormallyEquippable(record)) {
+    return;
+  }
+
+  state.pendingEquipRecord = record;
+  state.pendingReplace = null;
+
+  const itemName =
+    getField(record, "itemName") ||
+    "Unnamed item";
+
+  elements.equipSlotDialogTitle.textContent =
+    `Equip ${itemName}`;
+
+  elements.equipSlotDialogSubtitle.textContent =
+    getItemStatsDisplay(record);
+
+  renderDestinationChoices(record);
+
+  elements.equipSlotDialog.showModal();
+}
+
+function renderDestinationChoices(record) {
+  elements.normalSlotChoices.replaceChildren();
+  elements.anySlotChoices.replaceChildren();
+
+  const choices = getDestinationChoices(
+    state.build,
+    record,
+    state.recordsById
+  );
+
+  const normalSlots =
+    new Set(
+      getNormalPlannerSlots(record)
+    );
+
+  const normalChoices = choices.filter(
+    choice =>
+      normalSlots.has(
+        choice.plannerSlotId
+      )
+  );
+
+  const anyChoices = choices.filter(
+    choice =>
+      isAnyPlannerSlot(
+        choice.plannerSlotId
+      )
+  );
+
+  appendDestinationButtons(
+    elements.normalSlotChoices,
+    normalChoices,
+    "No recognized normal slots are available."
+  );
+
+  appendDestinationButtons(
+    elements.anySlotChoices,
+    anyChoices,
+    "This item is not eligible for an Any slot."
+  );
+}
+
+function appendDestinationButtons(
+  container,
+  choices,
+  emptyMessage
+) {
+  if (choices.length === 0) {
+    const message =
+      document.createElement("p");
+
+    message.className = "muted-message";
+    message.textContent = emptyMessage;
+
+    container.append(message);
+    return;
+  }
+
+  for (const choice of choices) {
+    const button =
+      document.createElement("button");
+
+    const slotLabel =
+      choice.plannerSlotLabel;
+
+    let occupancyText = "Empty";
+
+    if (choice.equippedRecord) {
+      occupancyText =
+        getField(
+          choice.equippedRecord,
+          "itemName"
+        ) || "Occupied";
+    } else if (
+      choice.equippedRecordId &&
+      !choice.equippedRecord
+    ) {
+      occupancyText =
+        "Saved item missing from database";
+    }
+
+    button.type = "button";
+    button.className =
+      "slot-choice-button";
+
+    button.dataset.destinationSlot =
+      choice.plannerSlotId;
+
+    button.innerHTML = `
+      <span class="slot-choice-name"></span>
+      <span class="slot-choice-occupancy"></span>
+    `;
+
+    button.querySelector(
+      ".slot-choice-name"
+    ).textContent = slotLabel;
+
+    button.querySelector(
+      ".slot-choice-occupancy"
+    ).textContent = occupancyText;
+
+    if (choice.occupied) {
+      button.classList.add("is-occupied");
+    }
+
+    if (choice.sameItem) {
+      button.classList.add("contains-same-item");
+    }
+
+    container.append(button);
+  }
+}
+
+function handleDestinationChoiceClick(event) {
+  const button = event.target.closest(
+    "button[data-destination-slot]"
+  );
+
+  if (
+    !button ||
+    !state.pendingEquipRecord
+  ) {
+    return;
+  }
+
+  const plannerSlotId =
+    button.dataset.destinationSlot;
+
+  const existingRecord =
+    getEquippedRecord(
+      state.build,
+      plannerSlotId,
+      state.recordsById
+    );
+
+  const existingRecordId =
+    state.build?.slots?.[plannerSlotId] ??
+    null;
+
+  const incomingRecordId =
+    getField(
+      state.pendingEquipRecord,
+      "recordId"
+    );
+
+  if (
+    existingRecordId &&
+    existingRecordId !== incomingRecordId
+  ) {
+    state.pendingReplace = {
+      record: state.pendingEquipRecord,
+      plannerSlotId,
+      existingRecord
+    };
+
+    const existingName =
+      existingRecord
+        ? getField(
+            existingRecord,
+            "itemName"
+          )
+        : "a saved item missing from the current database";
+
+    const incomingName =
+      getField(
+        state.pendingEquipRecord,
+        "itemName"
+      ) || "this item";
+
+    elements.replaceItemMessage.textContent =
+      `${getPlannerSlotLabel(plannerSlotId)} currently contains ` +
+      `${existingName}. Replace it with ${incomingName}?`;
+
+    elements.equipSlotDialog.close();
+    elements.replaceItemDialog.showModal();
+
+    return;
+  }
+
+  equipPendingRecord(
+    plannerSlotId,
+    false
+  );
+}
+
+function equipPendingRecord(
+  plannerSlotId,
+  allowReplace
+) {
+  if (!state.pendingEquipRecord) {
+    return;
+  }
+
+  const result = equipRecord(
+    state.build,
+    state.pendingEquipRecord,
+    plannerSlotId,
+    {
+      allowReplace
+    }
+  );
+
+  if (!result.success) {
+    console.warn(
+      "Item could not be equipped.",
+      result.reason
+    );
+
+    return;
+  }
+
+  state.build = result.build;
+
+  renderBuildPlanner();
+
+  elements.equipSlotDialog.close();
+
+  if (elements.replaceItemDialog.open) {
+    elements.replaceItemDialog.close();
+  }
+
+  const itemName =
+    getField(
+      state.pendingEquipRecord,
+      "itemName"
+    ) || "Item";
+
+  elements.buildSaveStatus.textContent =
+    `${itemName} equipped to ` +
+    `${getPlannerSlotLabel(plannerSlotId)}.`;
+
+  state.pendingEquipRecord = null;
+  state.pendingReplace = null;
+}
+
+function confirmPendingReplacement() {
+  if (!state.pendingReplace) {
+    return;
+  }
+
+  const {
+    plannerSlotId
+  } = state.pendingReplace;
+
+  equipPendingRecord(
+    plannerSlotId,
+    true
+  );
+}
+
+function cancelPendingReplacement() {
+  state.pendingReplace = null;
+
+  elements.replaceItemDialog.close();
+
+  if (state.pendingEquipRecord) {
+    elements.equipSlotDialog.showModal();
+  }
+}
+
+function closeEquipSlotDialog() {
+  state.pendingEquipRecord = null;
+  state.pendingReplace = null;
+
+  elements.equipSlotDialog.close();
+}
+function renderBuildPlanner() {
+  if (!state.build) {
+    state.build = loadBuild();
+  }
+
+  elements.buildNameInput.value =
+    state.build.name || "";
+
+  for (const slotButton of elements.plannerSlots) {
+    const plannerSlotId =
+      slotButton.dataset.plannerSlot;
+
+    const recordId =
+      state.build.slots?.[plannerSlotId] ??
+      null;
+
+    const record =
+      recordId
+        ? state.recordsById.get(recordId) ?? null
+        : null;
+
+    renderPlannerSlot(
+      slotButton,
+      plannerSlotId,
+      record,
+      recordId
+    );
+  }
+
+  renderBuildSummary();
+}
+
+function renderPlannerSlot(
+  slotButton,
+  plannerSlotId,
+  record,
+  recordId
+) {
+  const itemElement =
+    slotButton.querySelector(
+      ".planner-slot-item"
+    );
+
+  slotButton.classList.remove(
+    "is-empty",
+    "is-occupied",
+    "is-missing-record",
+    "is-quarantined"
+  );
+
+  if (!recordId) {
+    slotButton.classList.add("is-empty");
+
+    itemElement.textContent =
+      isAnyPlannerSlot(plannerSlotId)
+        ? "Any equippable item"
+        : "Empty";
+
+    slotButton.title =
+      `${getPlannerSlotLabel(plannerSlotId)}: Empty`;
+
+    return;
+  }
+
+  if (!record) {
+    slotButton.classList.add(
+      "is-occupied",
+      "is-missing-record"
+    );
+
+    itemElement.textContent =
+      "Saved item unavailable";
+
+    slotButton.title =
+      `${getPlannerSlotLabel(plannerSlotId)}: ` +
+      `The saved record is missing from the database`;
+
+    return;
+  }
+
+  slotButton.classList.add(
+    "is-occupied"
+  );
+
+  if (isQuarantined(record)) {
+    slotButton.classList.add(
+      "is-quarantined"
+    );
+  }
+
+  const itemName =
+    getField(record, "itemName") ||
+    "Unnamed item";
+
+  const compactWeapon =
+    getCompactWeaponDisplay(record);
+
+  const nativeSlot =
+    getNativeSlotDisplay(record);
+
+  const displayParts = [
+    itemName
+  ];
+
+  if (
+    isAnyPlannerSlot(plannerSlotId) &&
+    nativeSlot
+  ) {
+    displayParts.push(
+      `Native: ${nativeSlot}`
+    );
+  }
+
+  if (compactWeapon) {
+    displayParts.push(compactWeapon);
+  }
+
+  itemElement.replaceChildren();
+
+  const nameElement =
+    document.createElement("strong");
+
+  nameElement.className =
+    "planner-equipped-item-name";
+
+  nameElement.textContent = itemName;
+
+  itemElement.append(nameElement);
+
+  if (
+    isAnyPlannerSlot(plannerSlotId) &&
+    nativeSlot
+  ) {
+    const nativeSlotElement =
+      document.createElement("span");
+
+    nativeSlotElement.className =
+      "planner-native-slot";
+
+    nativeSlotElement.textContent =
+      `Native slot: ${nativeSlot}`;
+
+    itemElement.append(nativeSlotElement);
+  }
+
+  if (compactWeapon) {
+    const weaponElement =
+      document.createElement("span");
+
+    weaponElement.className =
+      "planner-weapon-ratio";
+
+    weaponElement.textContent =
+      compactWeapon;
+
+    itemElement.append(weaponElement);
+  }
+
+  slotButton.title =
+    `${getPlannerSlotLabel(plannerSlotId)}: ` +
+    displayParts.join(" • ");
+}
+
+function handlePlannerSlotClick(event) {
+  const slotButton =
+    event.currentTarget;
+
+  const plannerSlotId =
+    slotButton.dataset.plannerSlot;
+
+  const recordId =
+    state.build?.slots?.[plannerSlotId] ??
+    null;
+
+  if (!recordId) {
+    return;
+  }
+
+  state.selectedPlannerSlot =
+    plannerSlotId;
+
+  const record =
+    state.recordsById.get(recordId) ??
+    null;
+
+  openEquippedSlotDialog(
+    plannerSlotId,
+    record,
+    recordId
+  );
+}
+
+function openEquippedSlotDialog(
+  plannerSlotId,
+  record,
+  recordId
+) {
+  const slotLabel =
+    getPlannerSlotLabel(plannerSlotId);
+
+  elements.equippedSlotDialogTitle.textContent =
+    slotLabel;
+
+  elements.equippedSlotItemContent.replaceChildren();
+
+  if (!record) {
+    elements.equippedSlotDialogSubtitle.textContent =
+      "Saved item missing from the current database";
+
+    const warning =
+      document.createElement("p");
+
+    warning.className =
+      "warning-message";
+
+    warning.textContent =
+      `The saved record ${recordId} is no longer available. ` +
+      `You may remove it from this slot.`;
+
+    elements.equippedSlotItemContent.append(
+      warning
+    );
+
+    elements.viewEquippedItemButton.disabled =
+      true;
+
+    elements.removeEquippedItemButton.disabled =
+      false;
+
+    elements.equippedSlotDialog.showModal();
+    return;
+  }
+
+  const itemName =
+    getField(record, "itemName") ||
+    "Unnamed item";
+
+  elements.equippedSlotDialogSubtitle.textContent =
+    itemName;
+
+  elements.viewEquippedItemButton.disabled =
+    false;
+
+  elements.removeEquippedItemButton.disabled =
+    false;
+
+  const card =
+    document.createElement("section");
+
+  card.className =
+    "quick-detail-card";
+
+  appendQuickField(
+    card,
+    "Item",
+    itemName
+  );
+
+  appendQuickField(
+    card,
+    "Native slot",
+    getNativeSlotDisplay(record)
+  );
+
+  appendQuickField(
+    card,
+    "Stats",
+    getItemStatsDisplay(record),
+    "quick-field-wide"
+  );
+
+  appendQuickField(
+    card,
+    "Classes",
+    getPreferredClasses(record)
+  );
+
+  appendQuickField(
+    card,
+    "Races",
+    getPreferredRaces(record)
+  );
+
+  appendQuickField(
+    card,
+    "Effect",
+    combineValues(
+      getField(record, "procClickFocus"),
+      getField(record, "effectDescription")
+    ),
+    "quick-field-wide"
+  );
+
+  appendQuickField(
+    card,
+    "Verification",
+    getField(
+      record,
+      "verificationStatus"
+    )
+  );
+
+  elements.equippedSlotItemContent.append(
+    card
+  );
+
+  elements.equippedSlotDialog.showModal();
+}
+
+function closeEquippedSlotDialog() {
+  state.selectedPlannerSlot = null;
+  elements.equippedSlotDialog.close();
+}
+
+function viewSelectedEquippedItem() {
+  if (!state.selectedPlannerSlot) {
+    return;
+  }
+
+  const record = getEquippedRecord(
+    state.build,
+    state.selectedPlannerSlot,
+    state.recordsById
+  );
+
+  if (!record) {
+    return;
+  }
+
+  elements.equippedSlotDialog.close();
+  openItemDetails(record);
+}
+
+function removeSelectedEquippedItem() {
+  if (!state.selectedPlannerSlot) {
+    return;
+  }
+
+  const plannerSlotId =
+    state.selectedPlannerSlot;
+
+  const result = removeFromSlot(
+    state.build,
+    plannerSlotId
+  );
+
+  if (!result.success) {
+    return;
+  }
+
+  state.build = result.build;
+
+  elements.equippedSlotDialog.close();
+  state.selectedPlannerSlot = null;
+
+  renderBuildPlanner();
+
+  elements.buildSaveStatus.textContent =
+    `Removed item from ` +
+    `${getPlannerSlotLabel(plannerSlotId)}.`;
+}
+
+function handleBuildNameInput() {
+  state.build = setBuildName(
+    state.build,
+    elements.buildNameInput.value
+  );
+
+  elements.buildSaveStatus.textContent =
+    "Build name saved in this browser.";
+}
+
+function confirmClearBuild() {
+  state.build = clearBuild();
+
+  state.pendingEquipRecord = null;
+  state.pendingReplace = null;
+  state.selectedPlannerSlot = null;
+
+  elements.clearBuildDialog.close();
+
+  renderBuildPlanner();
+
+  elements.buildSaveStatus.textContent =
+    "Build cleared.";
+}
+
+function renderBuildSummary() {
+  const diagnostics =
+    getBuildDiagnostics(
+      state.build,
+      state.recordsById
+    );
+
+  elements.buildEquippedCount.textContent =
+    `${diagnostics.occupiedSlots} / ` +
+    `${diagnostics.totalSlots} slots equipped`;
+
+  const occupiedEntries =
+    getOccupiedSlotEntries(
+      state.build,
+      state.recordsById
+    );
+
+  const validRecords =
+    occupiedEntries
+      .map(entry => entry.record)
+      .filter(Boolean);
+
+  renderBuildStatSummary(
+    validRecords,
+    diagnostics
+  );
+
+  renderBuildEffectSummary(
+    validRecords
+  );
+
+  renderBuildWeaponSummary();
+
+  renderBuildVerificationSummary(
+    validRecords,
+    diagnostics
+  );
+}
+
+function renderBuildStatSummary(
+  records,
+  diagnostics
+) {
+  elements.buildStatSummary.replaceChildren();
+
+  if (records.length === 0) {
+    appendMutedMessage(
+      elements.buildStatSummary,
+      diagnostics.missingRecordCount > 0
+        ? "The equipped records are missing from the current database."
+        : "Equip items to begin building a stat summary."
+    );
+
+    return;
+  }
+
+  /*
+   * The initial planner presents each item's complete formatted stat line.
+   * Numeric totals will be added later after the historical stat formats
+   * have been audited and normalized.
+   */
+  const list =
+    document.createElement("ul");
+
+  list.className =
+    "build-summary-list";
+
+  for (
+    const entry
+    of getOccupiedSlotEntries(
+      state.build,
+      state.recordsById
+    )
+  ) {
+    if (!entry.record) {
+      continue;
+    }
+
+    const itemName =
+      getField(
+        entry.record,
+        "itemName"
+      ) || "Unnamed item";
+
+    const stats =
+      getItemStatsDisplay(
+        entry.record
+      ) || "No stats recorded";
+
+    const listItem =
+      document.createElement("li");
+
+    const label =
+      document.createElement("strong");
+
+    const value =
+      document.createElement("span");
+
+    label.textContent =
+      `${entry.plannerSlotLabel}: `;
+
+    value.textContent =
+      `${itemName} — ${stats}`;
+
+    listItem.append(label, value);
+    list.append(listItem);
+  }
+
+  elements.buildStatSummary.append(list);
+}
+
+function renderBuildEffectSummary(records) {
+  elements.buildEffectSummary.replaceChildren();
+
+  if (records.length === 0) {
+    appendMutedMessage(
+      elements.buildEffectSummary,
+      "No focus, proc, or click effects equipped."
+    );
+
+    return;
+  }
+
+  const focusFamilies = new Set();
+  const effectTypes = new Set();
+  const exactEffects = [];
+
+  for (const record of records) {
+    for (
+      const family
+      of getRecordFocusEffects(record)
+    ) {
+      focusFamilies.add(family);
+    }
+
+    for (
+      const effectType
+      of getRecordEffectTypes(record)
+    ) {
+      effectTypes.add(effectType);
+    }
+
+    const exactEffect =
+      combineValues(
+        getField(record, "procClickFocus"),
+        getField(
+          record,
+          "effectDescription"
+        )
+      );
+
+    if (exactEffect) {
+      exactEffects.push({
+        itemName:
+          getField(record, "itemName") ||
+          "Unnamed item",
+
+        effect: exactEffect
+      });
+    }
+  }
+
+  if (
+    focusFamilies.size === 0 &&
+    effectTypes.size === 0 &&
+    exactEffects.length === 0
+  ) {
+    appendMutedMessage(
+      elements.buildEffectSummary,
+      "No focus, proc, or click effects equipped."
+    );
+
+    return;
+  }
+
+  if (effectTypes.size > 0) {
+    appendSummaryValue(
+      elements.buildEffectSummary,
+      "Effect types",
+      [...effectTypes]
+        .sort(naturalCompare)
+        .join(", ")
+    );
+  }
+
+  if (focusFamilies.size > 0) {
+    appendSummaryValue(
+      elements.buildEffectSummary,
+      "Focus families",
+      [...focusFamilies]
+        .sort(naturalCompare)
+        .join(", ")
+    );
+  }
+
+  if (exactEffects.length > 0) {
+    const list =
+      document.createElement("ul");
+
+    list.className =
+      "build-summary-list";
+
+    for (const entry of exactEffects) {
+      const listItem =
+        document.createElement("li");
+
+      const itemName =
+        document.createElement("strong");
+
+      const effect =
+        document.createElement("span");
+
+      itemName.textContent =
+        `${entry.itemName}: `;
+
+      effect.textContent =
+        entry.effect;
+
+      listItem.append(
+        itemName,
+        effect
+      );
+
+      list.append(listItem);
+    }
+
+    elements.buildEffectSummary.append(
+      list
+    );
+  }
+}
+
+function renderBuildWeaponSummary() {
+  elements.buildWeaponSummary.replaceChildren();
+
+  const weaponSlotIds = [
+    "primary",
+    "secondary",
+    "range"
+  ];
+
+  const weaponEntries = [];
+
+  for (const plannerSlotId of weaponSlotIds) {
+    const record = getEquippedRecord(
+      state.build,
+      plannerSlotId,
+      state.recordsById
+    );
+
+    if (!record) {
+      continue;
+    }
+
+    const weaponDisplay =
+      getCompactWeaponDisplay(record);
+
+    const weaponSkill =
+      getWeaponSkill(record);
+
+    if (
+      !weaponDisplay &&
+      !weaponSkill
+    ) {
+      continue;
+    }
+
+    weaponEntries.push({
+      slotLabel:
+        getPlannerSlotLabel(
+          plannerSlotId
+        ),
+
+      itemName:
+        getField(record, "itemName") ||
+        "Unnamed item",
+
+      weaponDisplay,
+      weaponSkill
+    });
+  }
+
+  const anyWeaponEntries = [];
+
+  for (const plannerSlotId of [
+    "any_1",
+    "any_2"
+  ]) {
+    const record = getEquippedRecord(
+      state.build,
+      plannerSlotId,
+      state.recordsById
+    );
+
+    if (!record) {
+      continue;
+    }
+
+    const weaponDisplay =
+      getCompactWeaponDisplay(record);
+
+    if (!weaponDisplay) {
+      continue;
+    }
+
+    anyWeaponEntries.push({
+      slotLabel:
+        getPlannerSlotLabel(
+          plannerSlotId
+        ),
+
+      itemName:
+        getField(record, "itemName") ||
+        "Unnamed item",
+
+      weaponDisplay
+    });
+  }
+
+  if (
+    weaponEntries.length === 0 &&
+    anyWeaponEntries.length === 0
+  ) {
+    appendMutedMessage(
+      elements.buildWeaponSummary,
+      "No weapons equipped."
+    );
+
+    return;
+  }
+
+  const list =
+    document.createElement("ul");
+
+  list.className =
+    "build-summary-list";
+
+  for (const entry of weaponEntries) {
+    const listItem =
+      document.createElement("li");
+
+    const slot =
+      document.createElement("strong");
+
+    const details =
+      document.createElement("span");
+
+    slot.textContent =
+      `${entry.slotLabel}: `;
+
+    details.textContent = [
+      entry.itemName,
+      entry.weaponDisplay,
+      entry.weaponSkill
+        ? `Skill: ${entry.weaponSkill}`
+        : ""
+    ]
+      .filter(Boolean)
+      .join(" — ");
+
+    listItem.append(slot, details);
+    list.append(listItem);
+  }
+
+  for (const entry of anyWeaponEntries) {
+    const listItem =
+      document.createElement("li");
+
+    const slot =
+      document.createElement("strong");
+
+    const details =
+      document.createElement("span");
+
+    slot.textContent =
+      `${entry.slotLabel}: `;
+
+    details.textContent =
+      `${entry.itemName} — ` +
+      `${entry.weaponDisplay} ` +
+      `(equipped for stats)`;
+
+    listItem.append(slot, details);
+    list.append(listItem);
+  }
+
+  elements.buildWeaponSummary.append(list);
+}
+
+function renderBuildVerificationSummary(
+  records,
+  diagnostics
+) {
+  elements.buildVerificationSummary.replaceChildren();
+
+  if (
+    records.length === 0 &&
+    diagnostics.missingRecordCount === 0
+  ) {
+    appendMutedMessage(
+      elements.buildVerificationSummary,
+      "No equipped records to evaluate."
+    );
+
+    return;
+  }
+
+  const statusCounts = new Map();
+  let quarantinedCount = 0;
+
+  for (const record of records) {
+    const status =
+      getField(
+        record,
+        "verificationStatus"
+      ) || "Status not recorded";
+
+    statusCounts.set(
+      status,
+      (statusCounts.get(status) ?? 0) + 1
+    );
+
+    if (isQuarantined(record)) {
+      quarantinedCount += 1;
+    }
+  }
+
+  const list =
+    document.createElement("ul");
+
+  list.className =
+    "build-summary-list";
+
+  const sortedStatuses =
+    [...statusCounts.entries()]
+      .sort((left, right) =>
+        naturalCompare(
+          left[0],
+          right[0]
+        )
+      );
+
+  for (
+    const [status, count]
+    of sortedStatuses
+  ) {
+    const listItem =
+      document.createElement("li");
+
+    listItem.textContent =
+      `${status}: ${count}`;
+
+    list.append(listItem);
+  }
+
+  if (quarantinedCount > 0) {
+    const listItem =
+      document.createElement("li");
+
+    listItem.className =
+      "warning-message";
+
+    listItem.textContent =
+      `${quarantinedCount} quarantined ` +
+      `record${quarantinedCount === 1 ? "" : "s"}`;
+
+    list.append(listItem);
+  }
+
+  if (diagnostics.missingRecordCount > 0) {
+    const listItem =
+      document.createElement("li");
+
+    listItem.className =
+      "warning-message";
+
+    listItem.textContent =
+      `${diagnostics.missingRecordCount} saved ` +
+      `record${diagnostics.missingRecordCount === 1 ? "" : "s"} ` +
+      `missing from the current database`;
+
+    list.append(listItem);
+  }
+
+  elements.buildVerificationSummary.append(
+    list
+  );
+}
+
+function appendSummaryValue(
+  container,
+  label,
+  value
+) {
+  const paragraph =
+    document.createElement("p");
+
+  const labelElement =
+    document.createElement("strong");
+
+  const valueElement =
+    document.createElement("span");
+
+  labelElement.textContent =
+    `${label}: `;
+
+  valueElement.textContent = value;
+
+  paragraph.append(
+    labelElement,
+    valueElement
+  );
+
+  container.append(paragraph);
+}
+
+function appendMutedMessage(
+  container,
+  message
+) {
+  const paragraph =
+    document.createElement("p");
+
+  paragraph.className =
+    "muted-message";
+
+  paragraph.textContent = message;
+
+  container.append(paragraph);
+}
+
 function appendCell(
   row,
   value,
   className = ""
 ) {
-  const cell = document.createElement("td");
-
-  cell.textContent = hasValue(value)
-    ? String(value)
-    : "—";
+  const cell =
+    document.createElement("td");
 
   if (className) {
     cell.className = className;
   }
 
+  cell.textContent =
+    hasValue(value)
+      ? String(value)
+      : "—";
+
   row.append(cell);
 }
 
-function updateCounts() {
-  const zones = new Set(
-    state.filteredRecords
-      .map(record =>
-        getField(record, "zone")
-      )
-      .filter(Boolean)
-  );
-
-  elements.fileCount.textContent =
-    String(state.manifest?.fileCount ?? 0);
-
-  elements.recordCount.textContent =
-    String(state.records.length);
-
-  elements.matchCount.textContent =
-    String(state.filteredRecords.length);
-
-  elements.zoneCount.textContent =
-    String(zones.size);
-}
-
-function renderDiagnostics() {
-  const diagnostics = state.diagnostics;
-
-  elements.diagnostics.replaceChildren();
-
-  appendDiagnostic(
-    `Files discovered: ${diagnostics.filesDiscovered}`
-  );
-
-  appendDiagnostic(
-    `Files loaded: ${diagnostics.filesLoaded}`
-  );
-
-  appendDiagnostic(
-    `Loot files: ${diagnostics.lootFiles}`
-  );
-
-  appendDiagnostic(
-    `Evidence files attached: ${diagnostics.evidenceFiles}`
-  );
-
-  appendDiagnostic(
-    `Change-history files attached: ${diagnostics.historyFiles}`
-  );
-
-  appendDiagnostic(
-    `Unknown datasets ignored: ${diagnostics.unknownFiles}`
-  );
-
-  appendDiagnostic(
-    `Files failed: ${diagnostics.filesFailed}`
-  );
-
-  appendDiagnostic(
-    `Raw loot records: ${diagnostics.rawLootRecords}`
-  );
-
-  appendDiagnostic(
-    `Unique records: ${diagnostics.uniqueRecords}`
-  );
-
-  appendDiagnostic(
-    `Duplicate record IDs: ${
-      diagnostics.duplicateRecords.length
-    }`
-  );
-
-  appendDiagnostic(
-    `Malformed records: ${
-      diagnostics.malformedRecords.length
-    }`
-  );
-
-  appendDiagnostic(
-    `Loot files missing required columns: ${
-      diagnostics.missingRequiredColumns.length
-    }`
-  );
-
-  for (
-    const problem
-    of diagnostics.missingRequiredColumns
-  ) {
-    appendDiagnostic(
-      `${problem.file}: missing ${problem.columns.join(", ")}`,
-      "warning"
-    );
-  }
-
-  for (const error of diagnostics.fileErrors) {
-    appendDiagnostic(
-      `${error.file}: ${error.error}`,
-      "error"
-    );
-  }
-}
-
-function appendDiagnostic(
-  text,
+function appendQuickField(
+  container,
+  label,
+  value,
   className = ""
 ) {
-  const paragraph = document.createElement("p");
-
-  paragraph.textContent = text;
-
-  if (className) {
-    paragraph.className = className;
+  if (!hasValue(value)) {
+    return;
   }
 
-  elements.diagnostics.append(paragraph);
+  const field =
+    document.createElement("div");
+
+  field.className = [
+    "quick-field",
+    className
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const term =
+    document.createElement("strong");
+
+  const description =
+    document.createElement("span");
+
+  term.textContent = label;
+  description.textContent =
+    String(value);
+
+  field.append(term, description);
+  container.append(field);
+}
+
+function appendExpandableSection(
+  container,
+  title,
+  summary,
+  fields
+) {
+  const populatedFields =
+    fields.filter(([, value]) =>
+      hasValue(value)
+    );
+
+  if (populatedFields.length === 0) {
+    return;
+  }
+
+  const details =
+    document.createElement("details");
+
+  details.className =
+    "detail-section";
+
+  const summaryElement =
+    document.createElement("summary");
+
+  const titleElement =
+    document.createElement("strong");
+
+  const summaryText =
+    document.createElement("span");
+
+  titleElement.textContent = title;
+  summaryText.textContent = summary;
+
+  summaryElement.append(
+    titleElement,
+    summaryText
+  );
+
+  const content =
+    document.createElement("div");
+
+  content.className =
+    "detail-section-content";
+
+  for (
+    const [label, value]
+    of populatedFields
+  ) {
+    appendQuickField(
+      content,
+      label,
+      value,
+      "quick-field-wide"
+    );
+  }
+
+  details.append(
+    summaryElement,
+    content
+  );
+
+  container.append(details);
+}
+
+function appendResearchSection(record) {
+  const sourceLinks =
+    getPreferredSourceLinks(record);
+
+  const researchFields = [
+    [
+      "Verification status",
+      getField(
+        record,
+        "verificationStatus"
+      )
+    ],
+    [
+      "Audit action",
+      getField(record, "auditAction")
+    ],
+    [
+      "Confidence",
+      getField(record, "confidence")
+    ],
+    [
+      "Target priority",
+      getField(
+        record,
+        "targetPriority"
+      )
+    ],
+    [
+      "EQL evidence notes",
+      getField(
+        record,
+        "eqlEvidenceNotes"
+      )
+    ],
+    [
+      "EQL change notes",
+      getField(
+        record,
+        "eqlChangeNotes"
+      )
+    ],
+    [
+      "Research notes",
+      getField(record, "researchNotes")
+    ],
+    [
+      "Disagreement notes",
+      getField(
+        record,
+        "disagreementNotes"
+      )
+    ],
+    [
+      "Source links",
+      sourceLinks
+    ],
+    [
+      "Record ID",
+      getField(record, "recordId")
+    ],
+    [
+      "Revision",
+      getField(record, "revision")
+    ],
+    [
+      "Approved",
+      getField(record, "approved")
+    ]
+  ];
+
+  appendExpandableSection(
+    elements.itemDetailContent,
+    "Research and Provenance",
+    "Verification, source links, disagreements, and audit notes",
+    researchFields
+  );
+}
+
+function appendQuarantineWarning(container) {
+  const warning =
+    document.createElement("div");
+
+  warning.className =
+    "quarantine-warning";
+
+  const heading =
+    document.createElement("strong");
+
+  const text =
+    document.createElement("p");
+
+  heading.textContent =
+    "Quarantined research record";
+
+  text.textContent =
+    "This item may contain inherited, disputed, incomplete, or " +
+    "unverified EQL information. Review its research notes before " +
+    "using it as a definitive build recommendation.";
+
+  warning.append(heading, text);
+  container.append(warning);
+}
+
+function combineValues(...values) {
+  return values
+    .filter(value => hasValue(value))
+    .map(value => String(value).trim())
+    .filter(Boolean)
+    .filter(
+      (value, index, array) =>
+        array.indexOf(value) === index
+    )
+    .join(" • ");
 }
 
 function resetFilters() {
@@ -1900,21 +3380,26 @@ function resetFilters() {
   elements.slot.value = "";
   elements.className.value = "";
   elements.race.value = "";
+
   elements.minimumNpcLevel.value = "";
   elements.maximumNpcLevel.value = "";
+
   elements.magic.value = "";
   elements.lore.value = "";
   elements.noDrop.value = "";
   elements.questItem.value = "";
   elements.inventoryOnly.value = "";
+
   elements.effectPresent.value = "";
   elements.effectType.value = "";
   elements.focusEffect.value = "";
   elements.effectTransfer.value = "";
+
   elements.verification.value = "";
   elements.auditAction.value = "";
   elements.confidence.value = "";
   elements.targetPriority.value = "";
+
   elements.approvedOnly.checked = false;
   elements.statMode.value = "all";
 
@@ -1924,23 +3409,192 @@ function resetFilters() {
   applyCurrentFilters();
 }
 
-function updateStatus(
-  message,
-  statusType = ""
-) {
-  elements.status.textContent = message;
-  elements.status.className = "status";
+function updateCounts() {
+  elements.fileCount.textContent =
+    state.manifest?.files?.length ??
+    state.diagnostics?.fileCount ??
+    0;
 
-  if (statusType) {
-    elements.status.classList.add(statusType);
+  elements.recordCount.textContent =
+    state.records.length;
+
+  elements.matchCount.textContent =
+    state.filteredRecords.length;
+
+  elements.zoneCount.textContent =
+    new Set(
+      state.filteredRecords
+        .map(record =>
+          getField(record, "zone")
+        )
+        .filter(Boolean)
+    ).size;
+}
+
+function renderDiagnostics() {
+  elements.diagnostics.replaceChildren();
+
+  if (!state.diagnostics) {
+    appendMutedMessage(
+      elements.diagnostics,
+      "No diagnostics are available."
+    );
+
+    return;
+  }
+
+  const diagnosticFields = [
+    [
+      "CSV files processed",
+      state.diagnostics.fileCount
+    ],
+    [
+      "Rows loaded",
+      state.diagnostics.rowCount
+    ],
+    [
+      "Unique records",
+      state.records.length
+    ],
+    [
+      "Duplicate records resolved",
+      state.diagnostics.duplicateCount
+    ],
+    [
+      "Rows missing record IDs",
+      state.diagnostics.missingRecordIdCount
+    ],
+    [
+      "Rows with parsing warnings",
+      state.diagnostics.warningCount
+    ]
+  ];
+
+  const list =
+    document.createElement("dl");
+
+  list.className =
+    "diagnostic-list";
+
+  for (
+    const [label, value]
+    of diagnosticFields
+  ) {
+    if (
+      value === undefined ||
+      value === null
+    ) {
+      continue;
+    }
+
+    const term =
+      document.createElement("dt");
+
+    const description =
+      document.createElement("dd");
+
+    term.textContent = label;
+    description.textContent =
+      String(value);
+
+    list.append(
+      term,
+      description
+    );
+  }
+
+  elements.diagnostics.append(list);
+
+  if (
+    Array.isArray(
+      state.diagnostics.warnings
+    ) &&
+    state.diagnostics.warnings.length > 0
+  ) {
+    const warningHeading =
+      document.createElement("h3");
+
+    warningHeading.textContent =
+      "Warnings";
+
+    const warningList =
+      document.createElement("ul");
+
+    for (
+      const warning
+      of state.diagnostics.warnings
+    ) {
+      const item =
+        document.createElement("li");
+
+      item.textContent =
+        typeof warning === "string"
+          ? warning
+          : JSON.stringify(warning);
+
+      warningList.append(item);
+    }
+
+    elements.diagnostics.append(
+      warningHeading,
+      warningList
+    );
   }
 }
 
+function handleGenericDialogBackdropClick(
+  event
+) {
+  if (
+    event.target instanceof HTMLDialogElement
+  ) {
+    event.target.close();
+
+    if (
+      event.target ===
+      elements.equipSlotDialog
+    ) {
+      state.pendingEquipRecord = null;
+      state.pendingReplace = null;
+    }
+
+    if (
+      event.target ===
+      elements.replaceItemDialog
+    ) {
+      state.pendingReplace = null;
+    }
+
+    if (
+      event.target ===
+      elements.equippedSlotDialog
+    ) {
+      state.selectedPlannerSlot = null;
+    }
+  }
+}
+
+function updateStatus(
+  message,
+  type = ""
+) {
+  elements.status.textContent = message;
+
+  elements.status.className = [
+    "status",
+    type
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
 function displayFallbackError(message) {
-  const errorBox = document.createElement("p");
+  const paragraph =
+    document.createElement("p");
 
-  errorBox.className = "fallback-error";
-  errorBox.textContent = message;
+  paragraph.style.padding = "1rem";
+  paragraph.style.color = "crimson";
+  paragraph.textContent = message;
 
-  document.body.prepend(errorBox);
+  document.body.prepend(paragraph);
 }
