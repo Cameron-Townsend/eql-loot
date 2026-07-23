@@ -56,6 +56,7 @@ import {
 } from "./build-planner.js";
 
 const state = {
+  schemaRegistry: null,
   manifest: null,
   records: [],
   filteredRecords: [],
@@ -82,9 +83,17 @@ async function initialize() {
     validateRequiredElements();
     bindEvents();
 
-    updateStatus("Loading CSV database…");
+    updateStatus("Loading EQL schema registry…");
 
-    state.manifest = await loadManifest();
+state.schemaRegistry =
+  await loadSchemaRegistry();
+
+updateStatus(
+  `Schema ${state.schemaRegistry.schemaVersion} loaded. ` +
+  "Loading CSV database…"
+);
+
+state.manifest = await loadManifest();
 
     const fileResults = await loadAllCsvFiles(
       state.manifest
@@ -114,10 +123,11 @@ async function initialize() {
     renderBuildPlanner();
     renderDiagnostics();
 
-    updateStatus(
-      `Database loaded: ${state.records.length} unique records`,
-      "success"
-    );
+   updateStatus(
+  `Schema ${state.schemaRegistry.schemaVersion} loaded; ` +
+  `${state.records.length} database records ready`,
+  "success"
+);
   } catch (error) {
     console.error(error);
 
@@ -3437,6 +3447,32 @@ function updateCounts() {
 
 function renderDiagnostics() {
   elements.diagnostics.replaceChildren();
+
+  if (state.schemaRegistry) {
+  appendDiagnostic(
+    `Schema: ${state.schemaRegistry.schemaVersion}`
+  );
+
+  appendDiagnostic(
+    `Registered fields: ${
+      state.schemaRegistry.totalFieldCount
+    }`
+  );
+
+  appendDiagnostic(
+    `Legacy base fields: ${
+      state.schemaRegistry.baseFieldCount
+    }`
+  );
+
+  appendDiagnostic(
+    `List delimiter: ${
+      JSON.stringify(
+        state.schemaRegistry.listDelimiter
+      )
+    }`
+  );
+}
 
   if (!state.diagnostics) {
     appendMutedMessage(
