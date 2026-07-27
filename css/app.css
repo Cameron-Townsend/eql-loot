@@ -1925,3 +1925,238 @@ footer {
   }
 }
 
+/*
+ * Phase 2: simplified Browse filters and progressive disclosure
+ */
+
+.browse-filter-header {
+  align-items: flex-start;
+}
+
+.filter-introduction {
+  max-width: 48rem;
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.browse-search-row {
+  margin-bottom: 1rem;
+}
+
+.browse-search-row .search-control {
+  display: grid;
+  width: 100%;
+}
+
+.browse-search-row input[type="search"] {
+  min-height: 3.15rem;
+  font-size: 1rem;
+}
+
+.browse-primary-filters {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(9.5rem, 1fr));
+  gap: 0.8rem;
+  align-items: end;
+}
+
+.browse-primary-filters .level-range-hint {
+  grid-column: span 2;
+  min-height: 2.75rem;
+}
+
+.browse-filter-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 1rem;
+}
+
+.advanced-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  border-color: var(--accent-dark);
+  background: rgb(201 168 91 / 8%);
+  color: var(--accent-light);
+  font-weight: 700;
+}
+
+.filter-count-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 999px;
+  padding-inline: 0.35rem;
+  background: var(--accent);
+  color: var(--surface-dark);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.active-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-height: 0;
+  margin-top: 0.9rem;
+}
+
+.active-filter-chips:empty {
+  display: none;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 0.35rem 0.45rem 0.35rem 0.7rem;
+  background: var(--surface-dark);
+  color: var(--text);
+  font-size: 0.78rem;
+}
+
+.filter-chip strong {
+  color: var(--accent-light);
+}
+
+.filter-chip__remove {
+  display: inline-grid;
+  place-items: center;
+  width: 1.45rem;
+  min-height: 1.45rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: rgb(255 255 255 / 7%);
+  color: var(--muted);
+  line-height: 1;
+}
+
+.filter-chip__remove:hover:not(:disabled) {
+  border: 0;
+  background: rgb(223 123 112 / 16%);
+  color: var(--danger);
+  transform: none;
+}
+
+.advanced-filter-panel {
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  padding: 1rem;
+  background: rgb(13 17 12 / 70%);
+}
+
+.advanced-filter-panel[hidden] {
+  display: none;
+}
+
+.advanced-filter-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.advanced-filter-heading h3 {
+  margin: 0;
+}
+
+.advanced-filter-heading > p {
+  max-width: 38rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-align: right;
+}
+
+.advanced-filter-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.advanced-filter-group {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  padding: 0.9rem;
+  background: var(--surface);
+}
+
+.advanced-filter-group h4 {
+  margin: 0 0 0.25rem;
+}
+
+.advanced-filter-group > summary {
+  color: var(--accent-light);
+  font-weight: 700;
+}
+
+.filter-group-description {
+  margin: 0 0 0.8rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.advanced-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.advanced-filter-grid .checkbox-control {
+  padding-top: 1.35rem;
+}
+
+.advanced-filter-group .stat-filter-panel {
+  margin-top: 1rem;
+}
+
+@media (max-width: 1250px) {
+  .browse-primary-filters {
+    grid-template-columns: repeat(3, minmax(10rem, 1fr));
+  }
+
+  .advanced-filter-groups {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .browse-filter-header,
+  .advanced-filter-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .advanced-filter-heading > p {
+    text-align: left;
+  }
+
+  .browse-primary-filters,
+  .advanced-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .browse-primary-filters .level-range-hint {
+    grid-column: auto;
+  }
+
+  .browse-filter-actions,
+  .advanced-filter-toggle {
+    width: 100%;
+  }
+
+  .advanced-filter-toggle {
+    justify-content: center;
+  }
+}
