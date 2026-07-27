@@ -2160,3 +2160,86 @@ footer {
     justify-content: center;
   }
 }
+
+
+/*
+ * Phase 2B: prioritize stat and effect discovery
+ */
+.browse-primary-filters {
+  grid-template-columns: repeat(3, minmax(11rem, 1fr));
+}
+
+.primary-discovery-panel {
+  margin-top: 1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.65rem;
+  padding: 1rem;
+  background:
+    linear-gradient(
+      145deg,
+      rgb(201 168 91 / 7%),
+      rgb(13 17 12 / 78%)
+    );
+}
+
+.primary-discovery-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.primary-discovery-heading h3 {
+  margin: 0;
+}
+
+.primary-discovery-heading > p {
+  max-width: 42rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-align: right;
+}
+
+.primary-effect-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.primary-stat-panel .stat-filter-panel {
+  margin-top: 1rem;
+  background: rgb(13 17 12 / 48%);
+}
+
+.advanced-filter-grid .level-range-hint {
+  grid-column: span 2;
+}
+
+@media (max-width: 1250px) {
+  .primary-effect-grid {
+    grid-template-columns: repeat(2, minmax(10rem, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .browse-primary-filters,
+  .primary-effect-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .primary-discovery-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .primary-discovery-heading > p {
+    text-align: left;
+  }
+
+  .advanced-filter-grid .level-range-hint {
+    grid-column: auto;
+  }
+}
