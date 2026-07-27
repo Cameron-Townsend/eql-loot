@@ -1,4 +1,5 @@
 "use strict";
+
 import {
   getNormalizationSummary,
   normalizeRecord
@@ -7,6 +8,7 @@ import {
 import {
   validateFileResults
 } from "./schema-validator.js";
+
 /*
  * EverQuest Legends Loot Explorer
  * Core database and compatibility layer
@@ -126,7 +128,7 @@ export const FIELD_ALIASES = {
   coreOrSupplemental: [
     "core_or_supplemental"
   ],
-  
+
   recordId: [
     "record_id",
     "id"
@@ -587,6 +589,12 @@ export function buildDatabase(
   const pendingHistory = [];
 
   /*
+   * Only canonical schema datasets should receive canonical record
+   * validation. Failed files remain included so load errors are reported.
+   */
+  const validationFileResults = [];
+
+  /*
    * First pass:
    *
    * - Account for every physical file.
@@ -599,6 +607,10 @@ export function buildDatabase(
    */
   for (const fileResult of fileResults) {
     if (!fileResult.loaded) {
+      validationFileResults.push(
+        fileResult
+      );
+
       diagnostics.filesFailed += 1;
 
       diagnostics.fileErrors.push({
@@ -694,6 +706,10 @@ export function buildDatabase(
             registry
           )
       );
+
+    validationFileResults.push(
+      fileResult
+    );
 
     for (const record of fileResult.records) {
       const recordId =
@@ -809,14 +825,14 @@ export function buildDatabase(
     diagnostics.parserWarnings.length;
 
   /*
-   * Run validation only after every loot file has been normalized.
+   * Run validation only after every canonical file has been normalized.
    *
    * This allows correction targets to be checked across the entire loaded
    * stack without depending on file order or fetch-completion timing.
    */
   const validation =
     validateFileResults(
-      fileResults,
+      validationFileResults,
       registry
     );
 
@@ -973,36 +989,88 @@ function collectFileParserWarnings(
   }
 }
 
-export function classifyDataset(headers, filename = "") {
-  const normalizedHeaders = new Set(
-    headers.map(header => normalizeLower(header))
-  );
+export function classifyDataset(
+  headers,
+  filename = ""
+) {
+  const normalizedHeaders =
+    new Set(
+      headers.map(
+        header =>
+          normalizeLower(header)
+      )
+    );
 
-  const normalizedFilename = normalizeLower(filename);
+  const normalizedFilename =
+    normalizeLower(filename);
 
+  /*
+   * Evidence and change-history datasets must be detected before the
+   * broader canonical-record test because they may also contain record_id.
+   */
   if (
-    normalizedHeaders.has("evidence_id") ||
-    normalizedHeaders.has("evidence_type") ||
-    normalizedFilename.includes("evidence")
+    normalizedHeaders.has(
+      "evidence_id"
+    ) ||
+    normalizedHeaders.has(
+      "evidence_type"
+    ) ||
+    normalizedFilename.includes(
+      "evidence"
+    )
   ) {
     return "evidence";
   }
 
   if (
-    normalizedHeaders.has("change_id") ||
-    normalizedHeaders.has("change_type") ||
-    normalizedHeaders.has("changed_field") ||
-    normalizedFilename.includes("change-history") ||
-    normalizedFilename.includes("change_history")
+    normalizedHeaders.has(
+      "change_id"
+    ) ||
+    normalizedHeaders.has(
+      "change_type"
+    ) ||
+    normalizedHeaders.has(
+      "changed_field"
+    ) ||
+    normalizedFilename.includes(
+      "change-history"
+    ) ||
+    normalizedFilename.includes(
+      "change_history"
+    )
   ) {
     return "history";
   }
 
+  /*
+   * Canonical schema files may contain loot, corrections, research,
+   * metadata, zone metadata, or encounter metadata.
+   *
+   * item_name is not required for every record type.
+   */
   if (
-    normalizedHeaders.has("record_id") &&
+    normalizedHeaders.has(
+      "record_id"
+    ) &&
     (
-      normalizedHeaders.has("item_name") ||
-      normalizedHeaders.has("name")
+      normalizedHeaders.has(
+        "item_name"
+      ) ||
+      normalizedHeaders.has(
+        "name"
+      ) ||
+      normalizedHeaders.has(
+        "record_type"
+      ) ||
+      normalizedHeaders.has(
+        "eql_audit_action"
+      ) ||
+      normalizedHeaders.has(
+        "source_record_id"
+      ) ||
+      normalizedHeaders.has(
+        "record_status"
+      )
     )
   ) {
     return "loot";
@@ -1027,66 +1095,118 @@ function attachRelatedRecords(
   propertyName
 ) {
   for (const relatedRecord of relatedRecords) {
-    const recordId = normalizeText(
-      relatedRecord.record_id
-    );
+    const recordId =
+      normalizeText(
+        relatedRecord.record_id
+      );
 
     if (!recordId) {
       continue;
     }
 
-    const lootRecord = recordsById.get(recordId);
+    const lootRecord =
+      recordsById.get(
+        recordId
+      );
 
     if (!lootRecord) {
       continue;
     }
 
-    lootRecord[propertyName].push(relatedRecord);
+    lootRecord[propertyName].push(
+      relatedRecord
+    );
   }
 }
 
-export function getField(record, logicalFieldName) {
+export function getField(
+  record,
+  logicalFieldName
+) {
   const aliases =
-    FIELD_ALIASES[logicalFieldName] ?? [logicalFieldName];
+    FIELD_ALIASES[logicalFieldName] ??
+    [logicalFieldName];
 
   for (const alias of aliases) {
     if (
-      Object.prototype.hasOwnProperty.call(record, alias) &&
-      hasValue(record[alias])
+      Object.prototype.hasOwnProperty.call(
+        record,
+        alias
+      ) &&
+      hasValue(
+        record[alias]
+      )
     ) {
-      return normalizeText(record[alias]);
+      return normalizeText(
+        record[alias]
+      );
     }
   }
 
   return "";
 }
 
-export function getPreferredStats(record) {
+export function getPreferredStats(
+  record
+) {
   return (
-    getField(record, "statsEql") ||
-    getField(record, "statsRaw") ||
-    getField(record, "statsClassic")
+    getField(
+      record,
+      "statsEql"
+    ) ||
+    getField(
+      record,
+      "statsRaw"
+    ) ||
+    getField(
+      record,
+      "statsClassic"
+    )
   );
 }
 
-export function getPreferredClasses(record) {
+export function getPreferredClasses(
+  record
+) {
   return (
-    getField(record, "classesEql") ||
-    getField(record, "classesClassic")
+    getField(
+      record,
+      "classesEql"
+    ) ||
+    getField(
+      record,
+      "classesClassic"
+    )
   );
 }
 
-export function getPreferredRaces(record) {
+export function getPreferredRaces(
+  record
+) {
   return (
-    getField(record, "racesEql") ||
-    getField(record, "racesClassic")
+    getField(
+      record,
+      "racesEql"
+    ) ||
+    getField(
+      record,
+      "racesClassic"
+    )
   );
 }
 
-export function getPreferredNpcLevel(record) {
+export function getPreferredNpcLevel(
+  record
+) {
   return (
-    getField(record, "sourceNpcLevelEql") ||
-    getField(record, "sourceNpcLevel") ||
+    getField(
+      record,
+      "sourceNpcLevelEql"
+    ) ||
+    getField(
+      record,
+      "sourceNpcLevel"
+    ) ||
     getField(
       record,
       "sourceNpcLevelClassic"
@@ -1094,43 +1214,66 @@ export function getPreferredNpcLevel(record) {
   );
 }
 
-export function getPreferredSourceLinks(record) {
+export function getPreferredSourceLinks(
+  record
+) {
   const links = [];
 
   addSourceLink(
     links,
     "EQL Wiki",
-    getField(record, "eqlWikiSource")
+    getField(
+      record,
+      "eqlWikiSource"
+    )
   );
 
   addSourceLink(
     links,
     "Official EQL",
-    getField(record, "eqlOfficialSource")
+    getField(
+      record,
+      "eqlOfficialSource"
+    )
   );
 
   addSourceLink(
     links,
     "Classic/P99",
-    getField(record, "classicSource")
+    getField(
+      record,
+      "classicSource"
+    )
   );
 
   addSourceLink(
     links,
     "Primary source",
-    getField(record, "sourcePrimary")
+    getField(
+      record,
+      "sourcePrimary"
+    )
   );
 
   addSourceLink(
     links,
     "Secondary source",
-    getField(record, "sourceSecondary")
+    getField(
+      record,
+      "sourceSecondary"
+    )
   );
 
-  return deduplicateSourceLinks(links);
+  return deduplicateSourceLinks(
+    links
+  );
 }
 
-function addSourceLink(links, label, url) {
+function addSourceLink(
+  links,
+  label,
+  url
+) {
   if (!isSafeHttpUrl(url)) {
     return;
   }
@@ -1141,23 +1284,42 @@ function addSourceLink(links, label, url) {
   });
 }
 
-function deduplicateSourceLinks(links) {
-  const seen = new Set();
+function deduplicateSourceLinks(
+  links
+) {
+  const seen =
+    new Set();
 
-  return links.filter(link => {
-    if (seen.has(link.url)) {
-      return false;
+  return links.filter(
+    link => {
+      if (
+        seen.has(
+          link.url
+        )
+      ) {
+        return false;
+      }
+
+      seen.add(
+        link.url
+      );
+
+      return true;
     }
-
-    seen.add(link.url);
-    return true;
-  });
+  );
 }
 
-export function getBooleanValue(record, logicalFieldName) {
-  const value = normalizeLower(
-    getField(record, logicalFieldName)
-  );
+export function getBooleanValue(
+  record,
+  logicalFieldName
+) {
+  const value =
+    normalizeLower(
+      getField(
+        record,
+        logicalFieldName
+      )
+    );
 
   if (
     value === "yes" ||
@@ -1182,10 +1344,16 @@ export function getBooleanValue(record, logicalFieldName) {
   return null;
 }
 
-export function isApproved(record) {
-  const value = normalizeLower(
-    getField(record, "approved")
-  );
+export function isApproved(
+  record
+) {
+  const value =
+    normalizeLower(
+      getField(
+        record,
+        "approved"
+      )
+    );
 
   return (
     value === "yes" ||
@@ -1195,100 +1363,189 @@ export function isApproved(record) {
   );
 }
 
-export function isQuarantined(record) {
-  const status = normalizeLower(
-    getField(record, "verificationStatus")
-  );
+export function isQuarantined(
+  record
+) {
+  const status =
+    normalizeLower(
+      getField(
+        record,
+        "verificationStatus"
+      )
+    );
 
-  const auditAction = normalizeLower(
-    getField(record, "auditAction")
-  );
+  const auditAction =
+    normalizeLower(
+      getField(
+        record,
+        "auditAction"
+      )
+    );
 
   return (
-    status.includes("quarantine") ||
-    auditAction.includes("quarantine")
+    status.includes(
+      "quarantine"
+    ) ||
+    auditAction.includes(
+      "quarantine"
+    )
   );
 }
 
-export function isEqlConfirmed(record) {
-  if (isQuarantined(record)) {
+export function isEqlConfirmed(
+  record
+) {
+  if (
+    isQuarantined(
+      record
+    )
+  ) {
     return false;
   }
 
-  const status = normalizeLower(
-    getField(record, "verificationStatus")
-  );
+  const status =
+    normalizeLower(
+      getField(
+        record,
+        "verificationStatus"
+      )
+    );
 
   return (
-    status === "eql confirmed" ||
-    status === "eql confirmed — modified" ||
-    status === "eql confirmed - modified"
+    status ===
+      "eql confirmed" ||
+    status ===
+      "eql confirmed — modified" ||
+    status ===
+      "eql confirmed - modified"
   );
 }
 
-export function getVerificationBadgeClass(statusValue) {
-  const status = normalizeLower(statusValue)
-    .replaceAll("–", "-")
-    .replaceAll("—", "-");
+export function getVerificationBadgeClass(
+  statusValue
+) {
+  const status =
+    normalizeLower(
+      statusValue
+    )
+      .replaceAll(
+        "–",
+        "-"
+      )
+      .replaceAll(
+        "—",
+        "-"
+      );
 
-  if (status === "eql confirmed") {
+  if (
+    status ===
+    "eql confirmed"
+  ) {
     return "badge-confirmed";
   }
 
-  if (status.includes("eql confirmed") && status.includes("modified")) {
+  if (
+    status.includes(
+      "eql confirmed"
+    ) &&
+    status.includes(
+      "modified"
+    )
+  ) {
     return "badge-modified";
   }
 
   if (
-    status.includes("item confirmed") &&
-    status.includes("source unverified")
+    status.includes(
+      "item confirmed"
+    ) &&
+    status.includes(
+      "source unverified"
+    )
   ) {
     return "badge-item-confirmed";
   }
 
   if (
-    status.includes("npc confirmed") &&
-    status.includes("drop unverified")
+    status.includes(
+      "npc confirmed"
+    ) &&
+    status.includes(
+      "drop unverified"
+    )
   ) {
     return "badge-npc-confirmed";
   }
 
   if (
-    status.includes("wiki listed") &&
-    status.includes("unclear")
+    status.includes(
+      "wiki listed"
+    ) &&
+    status.includes(
+      "unclear"
+    )
   ) {
     return "badge-wiki-unclear";
   }
 
-  if (status.includes("classic baseline only")) {
+  if (
+    status.includes(
+      "classic baseline only"
+    )
+  ) {
     return "badge-classic";
   }
 
-  if (status.includes("out of current eql era")) {
+  if (
+    status.includes(
+      "out of current eql era"
+    )
+  ) {
     return "badge-era";
   }
 
-  if (status.includes("removed or replaced")) {
+  if (
+    status.includes(
+      "removed or replaced"
+    )
+  ) {
     return "badge-removed";
   }
 
-  if (status.includes("conflicting")) {
+  if (
+    status.includes(
+      "conflicting"
+    )
+  ) {
     return "badge-conflicting";
   }
 
-  if (status.includes("quarantine")) {
+  if (
+    status.includes(
+      "quarantine"
+    )
+  ) {
     return "badge-quarantine";
   }
 
-  if (status.includes("needs in-game verification")) {
+  if (
+    status.includes(
+      "needs in-game verification"
+    )
+  ) {
     return "badge-needs-verification";
   }
 
   return "badge-neutral";
 }
 
-export function parseLevelRange(value) {
-  const text = normalizeText(value);
+export function parseLevelRange(
+  value
+) {
+  const text =
+    normalizeText(
+      value
+    );
 
   if (!text) {
     return {
@@ -1297,50 +1554,92 @@ export function parseLevelRange(value) {
     };
   }
 
-  const numbers = text
-    .match(/\d+(?:\.\d+)?/g)
-    ?.map(Number)
-    .filter(Number.isFinite) ?? [];
+  const numbers =
+    text
+      .match(
+        /\d+(?:\.\d+)?/g
+      )
+      ?.map(Number)
+      .filter(
+        Number.isFinite
+      ) ?? [];
 
-  if (numbers.length === 0) {
+  if (
+    numbers.length === 0
+  ) {
     return {
       minimum: null,
       maximum: null
     };
   }
 
-  if (numbers.length === 1) {
+  if (
+    numbers.length === 1
+  ) {
     return {
-      minimum: numbers[0],
-      maximum: numbers[0]
+      minimum:
+        numbers[0],
+
+      maximum:
+        numbers[0]
     };
   }
 
   return {
-    minimum: Math.min(...numbers),
-    maximum: Math.max(...numbers)
+    minimum:
+      Math.min(
+        ...numbers
+      ),
+
+    maximum:
+      Math.max(
+        ...numbers
+      )
   };
 }
 
-export function parseRevision(value) {
-  const revision = Number.parseInt(value, 10);
+export function parseRevision(
+  value
+) {
+  const revision =
+    Number.parseInt(
+      value,
+      10
+    );
 
-  return Number.isFinite(revision)
+  return Number.isFinite(
+    revision
+  )
     ? revision
     : 0;
 }
 
-export function normalizeText(value) {
-  return String(value ?? "").trim();
+export function normalizeText(
+  value
+) {
+  return String(
+    value ?? ""
+  ).trim();
 }
 
-export function normalizeLower(value) {
-  return normalizeText(value).toLowerCase();
+export function normalizeLower(
+  value
+) {
+  return normalizeText(
+    value
+  ).toLowerCase();
 }
 
-export function naturalCompare(left, right) {
-  return String(left ?? "").localeCompare(
-    String(right ?? ""),
+export function naturalCompare(
+  left,
+  right
+) {
+  return String(
+    left ?? ""
+  ).localeCompare(
+    String(
+      right ?? ""
+    ),
     undefined,
     {
       numeric: true,
@@ -1349,25 +1648,38 @@ export function naturalCompare(left, right) {
   );
 }
 
-export function hasValue(value) {
+export function hasValue(
+  value
+) {
   return (
     value !== null &&
     value !== undefined &&
-    normalizeText(value) !== ""
+    normalizeText(
+      value
+    ) !== ""
   );
 }
 
-export function isSafeHttpUrl(value) {
+export function isSafeHttpUrl(
+  value
+) {
   if (!hasValue(value)) {
     return false;
   }
 
   try {
-    const url = new URL(normalizeText(value));
+    const url =
+      new URL(
+        normalizeText(
+          value
+        )
+      );
 
     return (
-      url.protocol === "http:" ||
-      url.protocol === "https:"
+      url.protocol ===
+        "http:" ||
+      url.protocol ===
+        "https:"
     );
   } catch {
     return false;
