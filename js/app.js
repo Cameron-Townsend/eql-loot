@@ -55,6 +55,8 @@ import {
   setBuildName
 } from "./build-planner.js";
 
+const RESULT_VIEW_STORAGE_KEY = "eql-loot-result-view";
+
 const state = {
   schemaRegistry: null,
   manifest: null,
@@ -85,14 +87,18 @@ async function initialize() {
     captureElements();
     validateRequiredElements();
     bindEvents();
-    handleResultViewChange({
-      currentTarget:
-        elements.resultViewButtons.find(
-          button =>
-            button.dataset.resultView ===
-            state.resultView
-        )
-    });
+
+    const savedResultView =
+      loadSavedResultView();
+
+    if (savedResultView) {
+      state.resultView =
+        savedResultView;
+    }
+
+    setResultView(
+      state.resultView
+    );
 
     updateStatus("Loading EQL schema registry…");
 
@@ -278,6 +284,11 @@ function captureElements() {
   elements.resultTableContainer =
     document.querySelector(
       "#result-table-container"
+    );
+
+  elements.resultCardList =
+    document.querySelector(
+      "#result-card-list"
     );
 
   elements.zoneSummaryBody =
@@ -523,6 +534,11 @@ function bindEvents() {
   );
 
   elements.resultsBody.addEventListener(
+    "click",
+    handleResultClick
+  );
+
+  elements.resultCardList.addEventListener(
     "click",
     handleResultClick
   );
@@ -1708,14 +1724,20 @@ function handleResultViewChange(event) {
   const requestedView =
     event.currentTarget.dataset.resultView;
 
-  if (
-    !requestedView ||
-    event.currentTarget.disabled
-  ) {
-    return;
-  }
+  setResultView(requestedView);
+}
 
-  state.resultView = requestedView;
+function setResultView(viewName) {
+  const supportedViews =
+    new Set([
+      "table",
+      "cards"
+    ]);
+
+  state.resultView =
+    supportedViews.has(viewName)
+      ? viewName
+      : "table";
 
   for (
     const button
@@ -1738,6 +1760,44 @@ function handleResultViewChange(event) {
 
   elements.resultTableContainer.hidden =
     state.resultView !== "table";
+
+  elements.resultCardList.hidden =
+    state.resultView !== "cards";
+
+  saveResultView(
+    state.resultView
+  );
+
+  renderResults();
+}
+
+function loadSavedResultView() {
+  try {
+    const savedView =
+      window.localStorage.getItem(
+        RESULT_VIEW_STORAGE_KEY
+      );
+
+    return (
+      savedView === "table" ||
+      savedView === "cards"
+    )
+      ? savedView
+      : "";
+  } catch {
+    return "";
+  }
+}
+
+function saveResultView(viewName) {
+  try {
+    window.localStorage.setItem(
+      RESULT_VIEW_STORAGE_KEY,
+      viewName
+    );
+  } catch {
+    // The interface still works when storage is blocked.
+  }
 }
 
 function sortFilteredRecords() {
@@ -1861,15 +1921,29 @@ function applyCurrentFilters() {
 }
 
 function renderResults() {
-  elements.resultsBody.replaceChildren();
+  renderResultTable();
+  renderResultCards();
+}
 
+function getDisplayedRecords() {
   const maximumRows = 500;
 
-  const displayedRecords =
-    state.filteredRecords.slice(
-      0,
-      maximumRows
-    );
+  return {
+    records:
+      state.filteredRecords.slice(
+        0,
+        maximumRows
+      ),
+    maximumRows
+  };
+}
+
+function renderResultTable() {
+  elements.resultsBody.replaceChildren();
+
+  const {
+    records: displayedRecords
+  } = getDisplayedRecords();
 
   for (const record of displayedRecords) {
     const row =
@@ -1965,6 +2039,287 @@ function renderResults() {
     row.append(cell);
     elements.resultsBody.append(row);
   }
+}
+
+function renderResultCards() {
+  elements.resultCardList.replaceChildren();
+
+  const {
+    records: displayedRecords,
+    maximumRows
+  } = getDisplayedRecords();
+
+  if (displayedRecords.length === 0) {
+    const message =
+      document.createElement("p");
+
+    message.className =
+      "result-card__empty";
+
+    message.textContent =
+      "No loot records match the active filters.";
+
+    elements.resultCardList.append(message);
+    return;
+  }
+
+  for (const record of displayedRecords) {
+    elements.resultCardList.append(
+      createResultCard(record)
+    );
+  }
+
+  if (
+    state.filteredRecords.length >
+    maximumRows
+  ) {
+    const note =
+      document.createElement("p");
+
+    note.className =
+      "result-card-list__limit-note";
+
+    note.textContent =
+      `Showing the first ${maximumRows} of ` +
+      `${state.filteredRecords.length} matching items.`;
+
+    elements.resultCardList.append(note);
+  }
+}
+
+function createResultCard(record) {
+  const card =
+    document.createElement("article");
+
+  card.className = "result-card";
+
+  const header =
+    document.createElement("header");
+
+  header.className =
+    "result-card__header";
+
+  const identity =
+    document.createElement("div");
+
+  identity.className =
+    "result-card__identity";
+
+  const itemButton =
+    document.createElement("button");
+
+  itemButton.type = "button";
+  itemButton.className =
+    "result-card__name";
+
+  itemButton.dataset.recordId =
+    getField(record, "recordId");
+
+  itemButton.textContent =
+    getField(record, "itemName") ||
+    "Unnamed item";
+
+  const classification =
+    document.createElement("p");
+
+  classification.className =
+    "result-card__classification";
+
+  classification.textContent = [
+    getField(record, "slot"),
+    getField(record, "category")
+  ]
+    .filter(hasValue)
+    .join(" • ") ||
+    "Equipment classification not recorded";
+
+  identity.append(
+    itemButton,
+    classification
+  );
+
+  const badges =
+    document.createElement("div");
+
+  badges.className =
+    "result-card__badges";
+
+  badges.append(
+    createVerificationBadge(
+      getField(
+        record,
+        "verificationStatus"
+      )
+    )
+  );
+
+  const confidence =
+    getField(record, "confidence");
+
+  if (hasValue(confidence)) {
+    const confidenceBadge =
+      document.createElement("span");
+
+    confidenceBadge.className =
+      "confidence-badge";
+
+    confidenceBadge.textContent =
+      `${confidence} confidence`;
+
+    badges.append(confidenceBadge);
+  }
+
+  header.append(identity, badges);
+
+  const body =
+    document.createElement("div");
+
+  body.className =
+    "result-card__body";
+
+  const stats =
+    document.createElement("p");
+
+  stats.className =
+    "result-card__stats";
+
+  stats.textContent =
+    getItemStatsDisplay(record) ||
+    "No item stats recorded";
+
+  const facts =
+    document.createElement("dl");
+
+  facts.className =
+    "result-card__facts";
+
+  appendCardFact(
+    facts,
+    "Zone",
+    getField(record, "zone")
+  );
+
+  appendCardFact(
+    facts,
+    "Source NPC",
+    getField(record, "sourceNpc")
+  );
+
+  appendCardFact(
+    facts,
+    "NPC level",
+    getPreferredNpcLevel(record)
+  );
+
+  appendCardFact(
+    facts,
+    "Classes",
+    getPreferredClasses(record)
+  );
+
+  body.append(stats, facts);
+
+  const effect =
+    getField(record, "procClickFocus");
+
+  if (hasValue(effect)) {
+    const effectText =
+      document.createElement("p");
+
+    effectText.className =
+      "result-card__effect";
+
+    const effectLabel =
+      document.createElement("strong");
+
+    effectLabel.textContent =
+      "Effect: ";
+
+    effectText.append(
+      effectLabel,
+      document.createTextNode(effect)
+    );
+
+    body.append(effectText);
+  }
+
+  const actions =
+    document.createElement("footer");
+
+  actions.className =
+    "result-card__actions";
+
+  const detailsButton =
+    document.createElement("button");
+
+  detailsButton.type = "button";
+  detailsButton.className =
+    "result-card__details-button";
+
+  detailsButton.dataset.recordId =
+    getField(record, "recordId");
+
+  detailsButton.textContent =
+    "View details";
+
+  actions.append(detailsButton);
+
+  const equipButton =
+    document.createElement("button");
+
+  equipButton.type = "button";
+  equipButton.className =
+    "equip-to-build-button";
+
+  if (isNormallyEquippable(record)) {
+    equipButton.dataset.equipRecordId =
+      getField(record, "recordId");
+
+    equipButton.textContent =
+      "Equip to Build";
+  } else {
+    equipButton.disabled = true;
+    equipButton.textContent =
+      "Not equippable";
+  }
+
+  actions.append(equipButton);
+
+  card.append(
+    header,
+    body,
+    actions
+  );
+
+  return card;
+}
+
+function appendCardFact(
+  list,
+  label,
+  value
+) {
+  const fact =
+    document.createElement("div");
+
+  fact.className =
+    "result-card__fact";
+
+  const term =
+    document.createElement("dt");
+
+  term.textContent = label;
+
+  const description =
+    document.createElement("dd");
+
+  description.textContent =
+    hasValue(value)
+      ? value
+      : "Not recorded";
+
+  fact.append(term, description);
+  list.append(fact);
 }
 
 function appendEquipCell(row, record) {
