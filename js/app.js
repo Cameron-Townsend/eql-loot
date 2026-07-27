@@ -67,7 +67,8 @@ const state = {
   pendingEquipRecord: null,
   pendingReplace: null,
   selectedPlannerSlot: null,
-  currentDetailRecord: null
+  currentDetailRecord: null,
+  activeView: "browse"
 };
 
 const elements = {};
@@ -125,6 +126,10 @@ state.manifest = await loadManifest();
     applyCurrentFilters();
     renderBuildPlanner();
     renderDiagnostics();
+
+    setActiveView(
+      state.activeView
+    );
 
    updateStatus(
   `Schema ${state.schemaRegistry.schemaVersion} loaded; ` +
@@ -364,6 +369,18 @@ function captureElements() {
 
   elements.cancelClearBuild =
     document.querySelector("#cancel-clear-build");
+
+  elements.viewButtons = [
+    ...document.querySelectorAll(
+      "[data-app-view]"
+    )
+  ];
+
+  elements.viewPanels = [
+    ...document.querySelectorAll(
+      "[data-view-panel]"
+    )
+  ];
 }
 
 function validateRequiredElements() {
@@ -386,6 +403,16 @@ function validateRequiredElements() {
 }
 
 function bindEvents() {
+  for (
+    const button
+    of elements.viewButtons
+  ) {
+    button.addEventListener(
+      "click",
+      handleViewChange
+    );
+  }
+
   const controls = [
     elements.search,
     elements.continent,
@@ -537,6 +564,71 @@ function bindEvents() {
     dialog.addEventListener(
       "click",
       handleGenericDialogBackdropClick
+    );
+  }
+}
+
+function handleViewChange(event) {
+  const requestedView =
+    event.currentTarget.dataset.appView;
+
+  if (!requestedView) {
+    return;
+  }
+
+  setActiveView(
+    requestedView
+  );
+}
+
+function setActiveView(viewName) {
+  const validView =
+    elements.viewPanels.some(
+      panel =>
+        panel.dataset.viewPanel ===
+        viewName
+    );
+
+  if (!validView) {
+    return;
+  }
+
+  state.activeView =
+    viewName;
+
+  for (
+    const button
+    of elements.viewButtons
+  ) {
+    const isActive =
+      button.dataset.appView ===
+      viewName;
+
+    button.classList.toggle(
+      "is-active",
+      isActive
+    );
+
+    button.setAttribute(
+      "aria-selected",
+      String(isActive)
+    );
+  }
+
+  for (
+    const panel
+    of elements.viewPanels
+  ) {
+    const isActive =
+      panel.dataset.viewPanel ===
+      viewName;
+
+    panel.hidden =
+      !isActive;
+
+    panel.classList.toggle(
+      "is-active",
+      isActive
     );
   }
 }
