@@ -381,6 +381,26 @@ function captureElements() {
       "[data-view-panel]"
     )
   ];
+
+  elements.advancedFilterToggle =
+    document.querySelector(
+      "#toggle-advanced-filters"
+    );
+
+  elements.advancedFilterPanel =
+    document.querySelector(
+      "#advanced-filter-panel"
+    );
+
+  elements.advancedFilterCount =
+    document.querySelector(
+      "#advanced-filter-count"
+    );
+
+  elements.activeFilterChips =
+    document.querySelector(
+      "#active-filter-chips"
+    );
 }
 
 function validateRequiredElements() {
@@ -412,6 +432,16 @@ function bindEvents() {
       handleViewChange
     );
   }
+
+  elements.advancedFilterToggle.addEventListener(
+    "click",
+    toggleAdvancedFilters
+  );
+
+  elements.activeFilterChips.addEventListener(
+    "click",
+    handleFilterChipClick
+  );
 
   const controls = [
     elements.search,
@@ -631,6 +661,251 @@ function setActiveView(viewName) {
       isActive
     );
   }
+}
+
+function toggleAdvancedFilters() {
+  const willOpen =
+    elements.advancedFilterPanel.hidden;
+
+  elements.advancedFilterPanel.hidden =
+    !willOpen;
+
+  elements.advancedFilterToggle.setAttribute(
+    "aria-expanded",
+    String(willOpen)
+  );
+
+  updateAdvancedFilterToggleLabel();
+}
+
+function updateAdvancedFilterToggleLabel() {
+  const isOpen =
+    !elements.advancedFilterPanel.hidden;
+
+  const label = isOpen
+    ? "Hide filters"
+    : "More filters";
+
+  const textNode =
+    [...elements.advancedFilterToggle.childNodes]
+      .find(node => node.nodeType === Node.TEXT_NODE);
+
+  if (textNode) {
+    textNode.textContent = `${label} `;
+  }
+}
+
+function handleFilterChipClick(event) {
+  const button = event.target.closest(
+    "[data-clear-filter]"
+  );
+
+  if (!button) {
+    return;
+  }
+
+  clearSingleFilter(
+    button.dataset.clearFilter,
+    button.dataset.filterValue || ""
+  );
+}
+
+function clearSingleFilter(filterKey, filterValue) {
+  const elementMap = {
+    search: elements.search,
+    continent: elements.continent,
+    zone: elements.zone,
+    sourceNpc: elements.sourceNpc,
+    category: elements.category,
+    slot: elements.slot,
+    className: elements.className,
+    race: elements.race,
+    minimumNpcLevel: elements.minimumNpcLevel,
+    maximumNpcLevel: elements.maximumNpcLevel,
+    magic: elements.magic,
+    lore: elements.lore,
+    noDrop: elements.noDrop,
+    questItem: elements.questItem,
+    inventoryOnly: elements.inventoryOnly,
+    effectPresent: elements.effectPresent,
+    effectType: elements.effectType,
+    focusEffect: elements.focusEffect,
+    effectTransferValue: elements.effectTransfer,
+    verification: elements.verification,
+    auditAction: elements.auditAction,
+    confidence: elements.confidence,
+    targetPriority: elements.targetPriority
+  };
+
+  if (filterKey === "approvedOnly") {
+    elements.approvedOnly.checked = false;
+  } else if (filterKey === "stat") {
+    state.selectedStats.delete(filterValue);
+  } else if (filterKey === "stats") {
+    state.selectedStats.clear();
+  } else if (elementMap[filterKey]) {
+    elementMap[filterKey].value = "";
+  }
+
+  updateEffectFilterAvailability();
+  applyCurrentFilters();
+}
+
+function renderActiveFilterChips(filters) {
+  elements.activeFilterChips.replaceChildren();
+
+  const chips = [];
+
+  const addChip = (
+    key,
+    label,
+    value,
+    clearValue = ""
+  ) => {
+    if (!hasValue(value)) {
+      return;
+    }
+
+    chips.push({
+      key,
+      label,
+      value: String(value),
+      clearValue
+    });
+  };
+
+  addChip("search", "Search", filters.search);
+  addChip("continent", "Continent", filters.continent);
+  addChip("zone", "Zone", filters.zone);
+  addChip("sourceNpc", "NPC", filters.sourceNpc);
+  addChip("category", "Category", filters.category);
+  addChip("slot", "Slot", filters.slot);
+  addChip("className", "Class", filters.className);
+  addChip("race", "Race", filters.race);
+  addChip(
+    "minimumNpcLevel",
+    "Minimum level",
+    filters.minimumNpcLevel
+  );
+  addChip(
+    "maximumNpcLevel",
+    "Maximum level",
+    filters.maximumNpcLevel
+  );
+  addChip("magic", "Magic", formatBooleanFilter(filters.magic));
+  addChip("lore", "Lore", formatBooleanFilter(filters.lore));
+  addChip("noDrop", "No Drop", formatBooleanFilter(filters.noDrop));
+  addChip("questItem", "Quest item", formatBooleanFilter(filters.questItem));
+  addChip(
+    "inventoryOnly",
+    "Inventory only",
+    formatBooleanFilter(filters.inventoryOnly)
+  );
+  addChip(
+    "effectPresent",
+    "Effect",
+    filters.effectPresent === "yes"
+      ? "Present"
+      : filters.effectPresent === "no"
+        ? "None listed"
+        : ""
+  );
+  addChip("effectType", "Effect type", filters.effectType);
+  addChip("focusEffect", "Focus", filters.focusEffect);
+  addChip(
+    "effectTransferValue",
+    "Transfer value",
+    filters.effectTransferValue
+  );
+  addChip(
+    "verification",
+    "Verification",
+    filters.verification === "__confirmed_only__"
+      ? "EQL Confirmed only"
+      : filters.verification
+  );
+  addChip("auditAction", "Audit action", filters.auditAction);
+  addChip("confidence", "Confidence", filters.confidence);
+  addChip("targetPriority", "Priority", filters.targetPriority);
+
+  if (filters.approvedOnly) {
+    addChip("approvedOnly", "Status", "Approved only");
+  }
+
+  for (const stat of filters.stats) {
+    addChip("stat", "Required stat", stat, stat);
+  }
+
+  for (const chip of chips) {
+    const container = document.createElement("span");
+    const text = document.createElement("span");
+    const label = document.createElement("strong");
+    const removeButton = document.createElement("button");
+
+    container.className = "filter-chip";
+    label.textContent = `${chip.label}:`;
+    text.append(label, ` ${chip.value}`);
+
+    removeButton.type = "button";
+    removeButton.className = "filter-chip__remove";
+    removeButton.dataset.clearFilter = chip.key;
+    removeButton.dataset.filterValue = chip.clearValue;
+    removeButton.setAttribute(
+      "aria-label",
+      `Remove ${chip.label} filter: ${chip.value}`
+    );
+    removeButton.textContent = "×";
+
+    container.append(text, removeButton);
+    elements.activeFilterChips.append(container);
+  }
+
+  const advancedCount = countAdvancedFilters(filters);
+  elements.advancedFilterCount.textContent =
+    String(advancedCount);
+  elements.advancedFilterCount.hidden =
+    advancedCount === 0;
+}
+
+function formatBooleanFilter(value) {
+  if (value === "yes") {
+    return "Yes";
+  }
+
+  if (value === "no") {
+    return "No";
+  }
+
+  if (value === "unknown") {
+    return "Unknown";
+  }
+
+  return "";
+}
+
+function countAdvancedFilters(filters) {
+  const advancedValues = [
+    filters.continent,
+    filters.sourceNpc,
+    filters.category,
+    filters.race,
+    filters.magic,
+    filters.lore,
+    filters.noDrop,
+    filters.questItem,
+    filters.inventoryOnly,
+    filters.effectPresent,
+    filters.effectType,
+    filters.focusEffect,
+    filters.effectTransferValue,
+    filters.auditAction,
+    filters.confidence,
+    filters.targetPriority
+  ];
+
+  return advancedValues.filter(hasValue).length +
+    (filters.approvedOnly ? 1 : 0) +
+    filters.stats.length;
 }
 
 function handleFilterChange() {
@@ -1410,6 +1685,7 @@ function applyCurrentFilters() {
   );
 
   refreshConditionalFilters(filters);
+  renderActiveFilterChips(filters);
   renderResults();
   renderZoneSummary();
   updateCounts();
