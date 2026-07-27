@@ -2,13 +2,10 @@
 
 /*
  * EverQuest Legends Loot Explorer
- * Registry-driven validation utilities
+ * Registry-driven schema validation
  *
  * This module reports data problems without changing canonical values.
- *
- * Validation warnings do not normally block the entire app. A registry
- * loading failure remains fatal, while individual CSV or row problems are
- * isolated and reported through diagnostics.
+ * Validation issues are returned to the existing diagnostics interface.
  */
 
 const METADATA_RECORD_TYPES = new Set([
@@ -20,17 +17,8 @@ const METADATA_RECORD_TYPES = new Set([
 const ISO_DATE_PATTERN =
   /^\d{4}-\d{2}-\d{2}$/;
 
-const PROTECTED_CORRECTION_FIELDS =
-  new Set([
-    "record_id",
-    "canonical_record_id",
-    "record_type"
-  ]);
-
 /**
- * Validate all loaded file results after parsing and normalization.
- *
- * This function expects fileResult.records to contain normalized records.
+ * Validate all loaded file results after their rows have been normalized.
  */
 export function validateFileResults(
   fileResults,
@@ -61,7 +49,8 @@ export function validateFileResults(
           recordId: "",
           field: "",
           message:
-            `${fileName}: ${fileResult.error || "File could not be loaded."}`
+            `${fileName}: ` +
+            `${fileResult.error || "File could not be loaded."}`
         }
       );
 
@@ -128,7 +117,7 @@ export function validateFileResults(
 }
 
 /**
- * Validate one normalized record.
+ * Validate one normalized row.
  */
 export function validateRecord(
   record,
@@ -173,7 +162,8 @@ export function validateRecord(
         recordId: "",
         field: "record_id",
         message:
-          `${formatLocation(file, row)}: record_id is blank.`
+          `${formatLocation(file, row)}: ` +
+          "record_id is blank."
       }
     );
   }
@@ -193,8 +183,11 @@ export function validateRecord(
         recordId,
         field: "item_name",
         message:
-          `${formatRecordLocation(file, row, recordId)}: ` +
-          "loot record has no item_name."
+          `${formatRecordLocation(
+            file,
+            row,
+            recordId
+          )}: loot record has no item_name.`
       }
     );
   }
@@ -229,20 +222,25 @@ export function validateRecord(
         recordId,
         field: "display_default",
         message:
-          `${formatRecordLocation(file, row, recordId)}: ` +
-          `${recordType} record is marked display_default=Yes.`
+          `${formatRecordLocation(
+            file,
+            row,
+            recordId
+          )}: ${recordType} record is marked ` +
+          "display_default=Yes."
       }
     );
   }
 
+  const isQuarantined =
+    recordType === "research" ||
+    normalizeLower(
+      record.record_status
+    ) === "quarantined" ||
+    auditAction === "quarantine";
+
   if (
-    (
-      recordType === "research" ||
-      normalizeLower(
-        record.record_status
-      ) === "quarantined" ||
-      auditAction === "quarantine"
-    ) &&
+    isQuarantined &&
     normalizeLower(
       record.display_default
     ) === "yes"
@@ -258,8 +256,12 @@ export function validateRecord(
         recordId,
         field: "display_default",
         message:
-          `${formatRecordLocation(file, row, recordId)}: ` +
-          "quarantined/research record is marked display_default=Yes."
+          `${formatRecordLocation(
+            file,
+            row,
+            recordId
+          )}: quarantined or research record is marked ` +
+          "display_default=Yes."
       }
     );
   }
@@ -276,18 +278,6 @@ export function validateRecord(
     warnings,
     warningsByType
   );
-
-  record.__validationWarnings =
-    warnings.filter(
-      warning =>
-        warning.file === file &&
-        warning.row === row &&
-        (
-          !recordId ||
-          !warning.recordId ||
-          warning.recordId === recordId
-        )
-    );
 
   return warnings;
 }
@@ -329,8 +319,11 @@ function validateCorrectionRecord(
         recordId,
         field: "source_record_id",
         message:
-          `${formatRecordLocation(file, row, recordId)}: ` +
-          "correction has no source_record_id."
+          `${formatRecordLocation(
+            file,
+            row,
+            recordId
+          )}: correction has no source_record_id.`
       }
     );
   }
@@ -356,31 +349,15 @@ function validateCorrectionRecord(
         recordId,
         field: "canonical_record_id",
         message:
-          `${formatRecordLocation(file, row, recordId)}: ` +
-          `canonical_record_id "${canonicalRecordId}" does not match ` +
+          `${formatRecordLocation(
+            file,
+            row,
+            recordId
+          )}: canonical_record_id ` +
+          `"${canonicalRecordId}" does not match ` +
           `source_record_id "${sourceRecordId}".`
       }
     );
-  }
-
-  for (
-    const protectedField
-    of PROTECTED_CORRECTION_FIELDS
-  ) {
-    if (
-      protectedField === "record_id"
-    ) {
-      continue;
-    }
-
-    if (
-      Object.prototype.hasOwnProperty.call(
-        record.__physicalFields ?? [],
-        protectedField
-      )
-    ) {
-      continue;
-    }
   }
 }
 
@@ -404,54 +381,45 @@ function validateRegisteredFields(
       continue;
     }
 
-    if (
-      fieldDefinition.type === "enum"
-    ) {
-      validateEnumField(
-        record,
-        fieldDefinition,
-        warnings,
-        warningsByType
-      );
+    switch (fieldDefinition.type) {
+      case "enum":
+        validateEnumField(
+          record,
+          fieldDefinition,
+          warnings,
+          warningsByType
+        );
+        break;
 
-      continue;
-    }
+      case "number":
+        validateNumberField(
+          record,
+          fieldDefinition,
+          warnings,
+          warningsByType
+        );
+        break;
 
-    if (
-      fieldDefinition.type === "number"
-    ) {
-      validateNumberField(
-        record,
-        fieldDefinition,
-        warnings,
-        warningsByType
-      );
+      case "date":
+        validateDateField(
+          record,
+          fieldDefinition,
+          warnings,
+          warningsByType
+        );
+        break;
 
-      continue;
-    }
+      case "json":
+        validateJsonField(
+          record,
+          fieldDefinition,
+          warnings,
+          warningsByType
+        );
+        break;
 
-    if (
-      fieldDefinition.type === "date"
-    ) {
-      validateDateField(
-        record,
-        fieldDefinition,
-        warnings,
-        warningsByType
-      );
-
-      continue;
-    }
-
-    if (
-      fieldDefinition.type === "json"
-    ) {
-      validateJsonField(
-        record,
-        fieldDefinition,
-        warnings,
-        warningsByType
-      );
+      default:
+        break;
     }
   }
 }
@@ -476,14 +444,14 @@ function validateEnumField(
       record[fieldDefinition.field]
     );
 
-  const validValue =
+  const isValid =
     fieldDefinition.allowedValues.some(
       allowedValue =>
         normalizeLower(allowedValue) ===
         normalizeLower(value)
     );
 
-  if (validValue) {
+  if (isValid) {
     return;
   }
 
@@ -494,7 +462,9 @@ function validateEnumField(
     {
       severity: "warning",
       type: "invalid-enum",
-      field: fieldDefinition.field,
+      field:
+        fieldDefinition.field,
+
       message:
         `${fieldDefinition.field} contains unregistered value ` +
         `"${value}". Allowed values: ` +
@@ -525,9 +495,12 @@ function validateNumberField(
     {
       severity: "warning",
       type: "invalid-number",
-      field: fieldDefinition.field,
+      field:
+        fieldDefinition.field,
+
       message:
-        `${fieldDefinition.field} contains nonnumeric value "${value}".`
+        `${fieldDefinition.field} contains nonnumeric value ` +
+        `"${value}".`
     }
   );
 }
@@ -554,9 +527,12 @@ function validateDateField(
     {
       severity: "warning",
       type: "invalid-date",
-      field: fieldDefinition.field,
+      field:
+        fieldDefinition.field,
+
       message:
-        `${fieldDefinition.field} must use ISO YYYY-MM-DD; found "${value}".`
+        `${fieldDefinition.field} must use ISO YYYY-MM-DD; ` +
+        `found "${value}".`
     }
   );
 }
@@ -582,7 +558,9 @@ function validateJsonField(
       {
         severity: "warning",
         type: "invalid-json",
-        field: fieldDefinition.field,
+        field:
+          fieldDefinition.field,
+
         message:
           `${fieldDefinition.field} does not contain valid JSON.`
       }
@@ -606,6 +584,21 @@ function validateExtensions(
     return;
   }
 
+  const file =
+    normalizeText(
+      record.__sourceFile
+    ) || "Unknown CSV";
+
+  const row =
+    normalizeRowNumber(
+      record.__sourceRow
+    );
+
+  const recordId =
+    normalizeText(
+      record.record_id
+    );
+
   for (
     const extensionName
     of Object.keys(extensions)
@@ -616,36 +609,19 @@ function validateExtensions(
       {
         severity: "notice",
         type: "unregistered-field",
-        file:
-          normalizeText(
-            record.__sourceFile
-          ) || "Unknown CSV",
-
-        row:
-          normalizeRowNumber(
-            record.__sourceRow
-          ),
-
-        recordId:
-          normalizeText(
-            record.record_id
-          ),
-
+        file,
+        row,
+        recordId,
         field:
           extensionName,
 
         message:
           `${formatRecordLocation(
-            normalizeText(
-              record.__sourceFile
-            ) || "Unknown CSV",
-            normalizeRowNumber(
-              record.__sourceRow
-            ),
-            normalizeText(
-              record.record_id
-            )
-          )}: unregistered field "${extensionName}" was preserved.`
+            file,
+            row,
+            recordId
+          )}: unregistered field ` +
+          `"${extensionName}" was preserved.`
       }
     );
   }
@@ -672,19 +648,22 @@ function validateDuplicateIdsWithinFile(
       continue;
     }
 
-    const previousRow =
-      seenIds.get(recordId);
+    const currentRow =
+      normalizeRowNumber(
+        record.__sourceRow
+      );
 
-    if (previousRow === undefined) {
+    if (!seenIds.has(recordId)) {
       seenIds.set(
         recordId,
-        normalizeRowNumber(
-          record.__sourceRow
-        )
+        currentRow
       );
 
       continue;
     }
+
+    const previousRow =
+      seenIds.get(recordId);
 
     addWarning(
       warnings,
@@ -693,22 +672,17 @@ function validateDuplicateIdsWithinFile(
         severity: "error",
         type: "duplicate-id-within-file",
         file: fileName,
-        row:
-          normalizeRowNumber(
-            record.__sourceRow
-          ),
-
+        row: currentRow,
         recordId,
         field: "record_id",
 
         message:
           `${formatRecordLocation(
             fileName,
-            normalizeRowNumber(
-              record.__sourceRow
-            ),
+            currentRow,
             recordId
-          )}: duplicate record_id also appeared on row ${previousRow}.`
+          )}: duplicate record_id also appeared on ` +
+          `row ${previousRow}.`
       }
     );
   }
@@ -739,12 +713,14 @@ function collectParserWarnings(
       warningsByType,
       {
         severity: "warning",
+
         type:
           normalizeText(
             parserWarning.type
           ) || "csv-parser-warning",
 
-        file: fileName,
+        file:
+          fileName,
 
         row:
           normalizeRowNumber(
@@ -795,11 +771,15 @@ function validateCorrectionTargets(
           record.record_id
         );
 
-      if (
+      const isCorrection =
         recordType === "correction" ||
-        auditAction === "correct"
-      ) {
-        correctionRecords.push(record);
+        auditAction === "correct";
+
+      if (isCorrection) {
+        correctionRecords.push(
+          record
+        );
+
         continue;
       }
 
@@ -826,43 +806,39 @@ function validateCorrectionTargets(
       continue;
     }
 
+    const file =
+      normalizeText(
+        correction.__sourceFile
+      ) || "Unknown CSV";
+
+    const row =
+      normalizeRowNumber(
+        correction.__sourceRow
+      );
+
+    const recordId =
+      normalizeText(
+        correction.record_id
+      );
+
     addWarning(
       warnings,
       warningsByType,
       {
         severity: "error",
         type: "unresolved-correction-target",
-
-        file:
-          normalizeText(
-            correction.__sourceFile
-          ) || "Unknown CSV",
-
-        row:
-          normalizeRowNumber(
-            correction.__sourceRow
-          ),
-
-        recordId:
-          normalizeText(
-            correction.record_id
-          ),
-
-        field:
-          "source_record_id",
+        file,
+        row,
+        recordId,
+        field: "source_record_id",
 
         message:
           `${formatRecordLocation(
-            normalizeText(
-              correction.__sourceFile
-            ) || "Unknown CSV",
-            normalizeRowNumber(
-              correction.__sourceRow
-            ),
-            normalizeText(
-              correction.record_id
-            )
-          )}: correction target "${sourceRecordId}" was not found.`
+            file,
+            row,
+            recordId
+          )}: correction target ` +
+          `"${sourceRecordId}" was not found.`
       }
     );
   }
@@ -913,7 +889,9 @@ function addWarning(
   warningsByType,
   warning
 ) {
-  warnings.push(warning);
+  warnings.push(
+    warning
+  );
 
   warningsByType.set(
     warning.type,
@@ -930,11 +908,8 @@ function isFiniteNumberString(value) {
     return false;
   }
 
-  const numericValue =
-    Number(value);
-
   return Number.isFinite(
-    numericValue
+    Number(value)
   );
 }
 
@@ -973,8 +948,7 @@ function isValidIsoDate(value) {
 
   return (
     date.getUTCFullYear() === year &&
-    date.getUTCMonth() ===
-      month - 1 &&
+    date.getUTCMonth() === month - 1 &&
     date.getUTCDate() === day
   );
 }
