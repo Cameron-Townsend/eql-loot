@@ -259,6 +259,11 @@ function captureElements() {
   elements.approvedOnly =
     document.querySelector("#approved-filter");
 
+  elements.statAvailability =
+    document.querySelector(
+      "#stat-availability-filter"
+    );
+
   elements.statMode =
     document.querySelector("#stat-mode-filter");
 
@@ -543,6 +548,7 @@ function bindEvents() {
     elements.confidence,
     elements.targetPriority,
     elements.approvedOnly,
+    elements.statAvailability,
     elements.statMode
   ];
 
@@ -862,7 +868,8 @@ function clearSingleFilter(filterKey, filterValue) {
     verification: elements.verification,
     auditAction: elements.auditAction,
     confidence: elements.confidence,
-    targetPriority: elements.targetPriority
+    targetPriority: elements.targetPriority,
+    statAvailability: elements.statAvailability
   };
 
   if (filterKey === "approvedOnly") {
@@ -873,6 +880,8 @@ function clearSingleFilter(filterKey, filterValue) {
     state.selectedStats.clear();
   } else if (filterKey === "inventoryOnly") {
     elements.inventoryOnly.value = "no";
+  } else if (filterKey === "statAvailability") {
+    elements.statAvailability.value = "has_stats";
   } else if (elementMap[filterKey]) {
     elementMap[filterKey].value = "";
   }
@@ -943,6 +952,14 @@ function renderActiveFilterChips(filters) {
       "Unknown"
     );
   }
+  if (filters.statAvailability === "no_stats") {
+    addChip(
+      "statAvailability",
+      "Stat availability",
+      "Items without stats"
+    );
+  }
+
   addChip(
     "effectPresent",
     "Effect",
@@ -1285,6 +1302,9 @@ function getCurrentFilters() {
 
     approvedOnly:
       elements.approvedOnly.checked,
+
+    statAvailability:
+      elements.statAvailability.value,
 
     stats: [...state.selectedStats],
     statMode: elements.statMode.value
@@ -4769,6 +4789,7 @@ function resetFilters() {
   elements.targetPriority.value = "";
 
   elements.approvedOnly.checked = false;
+  elements.statAvailability.value = "has_stats";
   elements.statMode.value = "all";
 
   state.selectedStats.clear();
