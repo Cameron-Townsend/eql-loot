@@ -94,8 +94,6 @@
         </option>
 </select>
 </label>
-
-
 <label>
        Zone
        <select id="zone-filter">
@@ -104,8 +102,6 @@
         </option>
 </select>
 </label>
-
-
 </div><section aria-labelledby="primary-discovery-heading" class="primary-discovery-panel">
 <div class="primary-discovery-heading">
 <div>
@@ -350,7 +346,6 @@
        Available source NPC levels will appear after loading.
       </p></div>
 </section>
-
 <section class="advanced-filter-group">
 <h4>
          EQL research status
@@ -415,21 +410,8 @@
 </section>
 </section>
 <section class="panel">
-<div class="panel-header">
-<div>
-<p class="eyebrow">
-        Database results
-       </p>
-<h2>
-        Matching items
-       </h2>
-</div>
-<p class="table-help">
-       Select an item name for details, or equip it directly
-          into the current loadout.
-      </p>
-</div>
-<div class="table-wrapper">
+<header class="results-toolbar"><div class="results-toolbar__summary"><p class="eyebrow">Database results</p><div class="results-toolbar__headline"><strong id="results-summary"><span id="match-count">0</span> items found</strong><span class="results-zone-summary"> across <span id="zone-count">0</span> zones</span></div><p class="results-toolbar__help">Select an item name for details, or equip it directly into the current loadout.</p></div><div class="results-toolbar__controls"><label class="results-sort-control">Sort results<select id="result-sort"><option value="zone-item">Zone, then item</option><option value="item">Item name</option><option value="npc-level">NPC level</option><option value="confidence">Confidence</option></select></label><div aria-label="Result view" class="result-view-control"><span class="result-view-control__label">View</span><div aria-label="Choose result layout" class="result-view-toggle" role="group"><button aria-pressed="true" class="is-active" data-result-view="table" type="button">Table</button><button aria-pressed="false" data-result-view="cards" disabled="" title="Card view arrives in Phase 4" type="button">Cards</button></div></div></div></header>
+<div class="table-wrapper" id="result-table-container">
 <table>
 <thead>
 <tr>
@@ -831,7 +813,7 @@
       Review database status, schema information, and diagnostics.
      </p>
 </header>
-<section aria-label="Database summary" class="summary-grid">
+<section aria-label="Database summary" class="summary-grid summary-grid--compact">
 <article class="summary-card">
 <span>
        CSV files
@@ -848,22 +830,8 @@
        0
       </strong>
 </article>
-<article class="summary-card">
-<span>
-       Matching records
-      </span>
-<strong id="match-count">
-       0
-      </strong>
-</article>
-<article class="summary-card">
-<span>
-       Matching zones
-      </span>
-<strong id="zone-count">
-       0
-      </strong>
-</article>
+
+
 </section>
 <section class="panel">
 <details>
