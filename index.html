@@ -33,9 +33,23 @@
 <button aria-controls="browse-view" aria-selected="true" class="primary-navigation__button is-active" data-app-view="browse" type="button">
     Browse Loot
    </button>
-<button aria-controls="planner-view" aria-selected="false" class="primary-navigation__button" data-app-view="planner" type="button">
-    Build Planner
-   </button>
+<button
+  aria-controls="planner-view"
+  aria-selected="false"
+  class="primary-navigation__button"
+  data-app-view="planner"
+  type="button"
+>
+  <span>Build Planner</span>
+
+  <span
+    id="planner-nav-count"
+    class="primary-navigation__count"
+    aria-label="0 of 23 loadout slots equipped"
+  >
+    0/23
+  </span>
+</button>
 <button aria-controls="zones-view" aria-selected="false" class="primary-navigation__button" data-app-view="zones" type="button">
     Explore Zones
    </button>
@@ -525,303 +539,307 @@
 </div>
 </section>
 </section>
-<section aria-label="Build planner" class="app-view" data-view-panel="planner" hidden="" id="planner-view">
-<header class="view-header">
-<p class="eyebrow">
-      Equipment planning
-     </p>
-<h2>
-      Build Planner
-     </h2>
-<p class="view-description">
-      Assemble and review a saved EQL equipment loadout.
-     </p>
-</header>
-<section class="panel build-planner-panel" id="build-planner-panel">
-<div class="panel-header build-planner-header">
-<div>
-<p class="eyebrow">
-        Equipment planning
-       </p>
-<h2>
-        EQL Build / Loadout Planner
-       </h2>
-<p class="planner-introduction">
-        Equip researched items into their normal positions,
-            or place any normally equippable item into either
-            official EQL Any slot.
-       </p>
-</div>
-<button id="clear-build-button" type="button">
-       Clear loadout
-      </button>
-</div>
-<div class="build-name-row">
-<label>
-       Loadout name
-       <input id="build-name-input" maxlength="80" placeholder="My EQL equipment loadout" type="text"/>
-</label>
-<p aria-live="polite" class="build-save-status" id="build-save-status">
-       Loadout saves automatically in this browser.
+<section
+  id="planner-view"
+  class="app-view"
+  data-view-panel="planner"
+  aria-label="Build planner"
+  hidden
+>
+  <header class="view-header planner-view-header">
+    <div>
+      <p class="eyebrow">Equipment planning</p>
+      <h2>Build Planner</h2>
+
+      <p class="view-description">
+        Assemble a saved EQL loadout using the XML-inspired
+        equipment arrangement and official EQL Any slots.
       </p>
-</div>
-<div class="paper-doll-layout">
-<div aria-label="Equipment loadout slots" class="paper-doll-grid">
-<button class="planner-slot" data-planner-slot="ear_left" type="button">
-<span class="planner-slot-label">
-         Left Ear
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot" data-planner-slot="neck" type="button">
-<span class="planner-slot-label">
-         Neck
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot" data-planner-slot="face" type="button">
-<span class="planner-slot-label">
-         Face
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot" data-planner-slot="head" type="button">
-<span class="planner-slot-label">
-         Head
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot" data-planner-slot="ear_right" type="button">
-<span class="planner-slot-label">
-         Right Ear
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot" data-planner-slot="finger_left" type="button">
-<span class="planner-slot-label">
-         Left Finger
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot" data-planner-slot="wrist_left" type="button">
-<span class="planner-slot-label">
-         Left Wrist
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot" data-planner-slot="arms" type="button">
-<span class="planner-slot-label">
-         Arms
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot" data-planner-slot="hands" type="button">
-<span class="planner-slot-label">
-         Hands
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot" data-planner-slot="wrist_right" type="button">
-<span class="planner-slot-label">
-         Right Wrist
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot" data-planner-slot="finger_right" type="button">
-<span class="planner-slot-label">
-         Right Finger
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot" data-planner-slot="shoulders" type="button">
-<span class="planner-slot-label">
-         Shoulders
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot" data-planner-slot="chest" type="button">
-<span class="planner-slot-label">
-         Chest
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot" data-planner-slot="back" title="Back / About Body" type="button">
-<span class="planner-slot-label">
-         Back
-        </span>
-<span class="planner-slot-official-name">
-         About Body
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot" data-planner-slot="waist" type="button">
-<span class="planner-slot-label">
-         Waist
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot" data-planner-slot="legs" type="button">
-<span class="planner-slot-label">
-         Legs
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot" data-planner-slot="feet" type="button">
-<span class="planner-slot-label">
-         Feet
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-</div>
-<div aria-label="Weapon, utility, and EQL Any slots" class="weapon-slot-grid">
-<button class="planner-slot weapon-planner-slot" data-planner-slot="primary" type="button">
-<span class="planner-slot-label">
-         Primary
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot weapon-planner-slot" data-planner-slot="secondary" type="button">
-<span class="planner-slot-label">
-         Secondary
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot weapon-planner-slot" data-planner-slot="range" type="button">
-<span class="planner-slot-label">
-         Range
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot weapon-planner-slot" data-planner-slot="ammo" type="button">
-<span class="planner-slot-label">
-         Ammo
-        </span>
-<span class="planner-slot-item">
-         Empty
-        </span>
-</button>
-<button class="planner-slot weapon-planner-slot any-planner-slot" data-planner-slot="any_1" title="Official EQL equipment position 0" type="button">
-<span class="planner-slot-label">
-         Any 1
-        </span>
-<span class="planner-slot-official-name">
-         Equip 0
-        </span>
-<span class="planner-slot-item">
-         Any equippable item
-        </span>
-</button>
-<button class="planner-slot weapon-planner-slot any-planner-slot" data-planner-slot="any_2" title="Official EQL equipment position 21" type="button">
-<span class="planner-slot-label">
-         Any 2
-        </span>
-<span class="planner-slot-official-name">
-         Equip 21
-        </span>
-<span class="planner-slot-item">
-         Any equippable item
-        </span>
-</button>
-</div>
-</div>
-<section aria-labelledby="build-summary-heading" class="build-summary">
-<div class="build-summary-header">
-<div>
-<p class="eyebrow">
-         Calculated loadout
+    </div>
+
+    <button
+      type="button"
+      class="planner-browse-button"
+      data-app-view-link="browse"
+    >
+      Browse items
+    </button>
+  </header>
+
+  <section
+    id="build-planner-panel"
+    class="panel build-planner-panel planner-workspace"
+  >
+    <header class="planner-workspace__header">
+      <div class="planner-build-identity">
+        <label>
+          Loadout name
+
+          <input
+            id="build-name-input"
+            type="text"
+            maxlength="80"
+            placeholder="My EQL equipment loadout"
+          >
+        </label>
+
+        <p
+          id="build-save-status"
+          class="build-save-status"
+          aria-live="polite"
+        >
+          Loadout saves automatically in this browser.
         </p>
-<h3 id="build-summary-heading">
-         Loadout Summary
-        </h3>
-</div>
-<strong id="build-equipped-count">
-        0 / 23 slots equipped
-       </strong>
-</div>
-<div class="build-summary-grid">
-<article class="build-summary-card">
-<h4>
-         Item stats
-        </h4>
-<div id="build-stat-summary">
-<p class="muted-message">
-          Equip items to begin building a stat summary.
-         </p>
-</div>
-</article>
-<article class="build-summary-card">
-<h4>
-         Effects
-        </h4>
-<div id="build-effect-summary">
-<p class="muted-message">
-          No focus, proc, or click effects equipped.
-         </p>
-</div>
-</article>
-<article class="build-summary-card">
-<h4>
-         Weapons
-        </h4>
-<div id="build-weapon-summary">
-<p class="muted-message">
-          No weapons equipped.
-         </p>
-</div>
-</article>
-<article class="build-summary-card">
-<h4>
-         Research status
-        </h4>
-<div id="build-verification-summary">
-<p class="muted-message">
-          No equipped records to evaluate.
-         </p>
-</div>
-</article>
-</div>
-</section>
-</section>
+      </div>
+
+      <div class="planner-workspace__status">
+        <strong
+          id="build-equipped-count"
+          class="planner-equipped-count"
+        >
+          0 / 23 slots equipped
+        </strong>
+
+        <button id="clear-build-button" type="button">
+          Clear loadout
+        </button>
+      </div>
+    </header>
+
+    <div class="planner-workspace__main">
+      <section
+        class="equipment-doll-panel"
+        aria-labelledby="equipment-doll-heading"
+      >
+        <header class="planner-section-heading">
+          <div>
+            <p class="eyebrow">Character equipment</p>
+            <h3 id="equipment-doll-heading">Equipment Doll</h3>
+          </div>
+
+          <p>
+            Select an occupied position to view or remove its item.
+          </p>
+        </header>
+
+        <div
+          class="equipment-doll"
+          aria-label="XML-inspired equipment loadout positions"
+        >
+          <div
+            class="equipment-doll__silhouette"
+            aria-hidden="true"
+          >
+            <span class="equipment-doll__head"></span>
+            <span class="equipment-doll__body"></span>
+            <span class="equipment-doll__arm equipment-doll__arm--left"></span>
+            <span class="equipment-doll__arm equipment-doll__arm--right"></span>
+            <span class="equipment-doll__leg equipment-doll__leg--left"></span>
+            <span class="equipment-doll__leg equipment-doll__leg--right"></span>
+          </div>
+
+          <button class="planner-slot doll-slot doll-slot--head" type="button" data-planner-slot="head">
+            <span class="planner-slot-label">Head</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot doll-slot doll-slot--ear-left" type="button" data-planner-slot="ear_left">
+            <span class="planner-slot-label">Left Ear</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot doll-slot doll-slot--ear-right" type="button" data-planner-slot="ear_right">
+            <span class="planner-slot-label">Right Ear</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot doll-slot doll-slot--face" type="button" data-planner-slot="face">
+            <span class="planner-slot-label">Face</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot doll-slot doll-slot--neck" type="button" data-planner-slot="neck">
+            <span class="planner-slot-label">Neck</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot doll-slot doll-slot--shoulders" type="button" data-planner-slot="shoulders">
+            <span class="planner-slot-label">Shoulders</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot doll-slot doll-slot--back" type="button" data-planner-slot="back" title="Back / About Body">
+            <span class="planner-slot-label">Back</span>
+            <span class="planner-slot-official-name">About Body</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot doll-slot doll-slot--arms" type="button" data-planner-slot="arms">
+            <span class="planner-slot-label">Arms</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot doll-slot doll-slot--chest" type="button" data-planner-slot="chest">
+            <span class="planner-slot-label">Chest</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot doll-slot doll-slot--hands" type="button" data-planner-slot="hands">
+            <span class="planner-slot-label">Hands</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot doll-slot doll-slot--wrist-left" type="button" data-planner-slot="wrist_left">
+            <span class="planner-slot-label">Left Wrist</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot doll-slot doll-slot--wrist-right" type="button" data-planner-slot="wrist_right">
+            <span class="planner-slot-label">Right Wrist</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot doll-slot doll-slot--finger-left" type="button" data-planner-slot="finger_left">
+            <span class="planner-slot-label">Left Finger</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot doll-slot doll-slot--finger-right" type="button" data-planner-slot="finger_right">
+            <span class="planner-slot-label">Right Finger</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot doll-slot doll-slot--waist" type="button" data-planner-slot="waist">
+            <span class="planner-slot-label">Waist</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot doll-slot doll-slot--legs" type="button" data-planner-slot="legs">
+            <span class="planner-slot-label">Legs</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot doll-slot doll-slot--feet" type="button" data-planner-slot="feet">
+            <span class="planner-slot-label">Feet</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+        </div>
+      </section>
+
+      <aside
+        class="build-summary planner-summary-panel"
+        aria-labelledby="build-summary-heading"
+      >
+        <div class="build-summary-header">
+          <div>
+            <p class="eyebrow">Calculated loadout</p>
+            <h3 id="build-summary-heading">Loadout Summary</h3>
+          </div>
+        </div>
+
+        <div class="build-summary-grid">
+          <article class="build-summary-card">
+            <h4>Item stats</h4>
+            <div id="build-stat-summary">
+              <p class="muted-message">
+                Equip items to begin building a stat summary.
+              </p>
+            </div>
+          </article>
+
+          <article class="build-summary-card">
+            <h4>Effects</h4>
+            <div id="build-effect-summary">
+              <p class="muted-message">
+                No focus, proc, or click effects equipped.
+              </p>
+            </div>
+          </article>
+
+          <article class="build-summary-card">
+            <h4>Weapons</h4>
+            <div id="build-weapon-summary">
+              <p class="muted-message">
+                No weapons equipped.
+              </p>
+            </div>
+          </article>
+
+          <article class="build-summary-card">
+            <h4>Research status</h4>
+            <div id="build-verification-summary">
+              <p class="muted-message">
+                No equipped records to evaluate.
+              </p>
+            </div>
+          </article>
+        </div>
+      </aside>
+    </div>
+
+    <section
+      class="planner-lower-slots"
+      aria-label="Weapon, utility, and EQL Any equipment positions"
+    >
+      <section class="planner-slot-group">
+        <header class="planner-section-heading">
+          <div>
+            <p class="eyebrow">Combat equipment</p>
+            <h3>Weapons &amp; Utility</h3>
+          </div>
+        </header>
+
+        <div class="weapon-slot-grid">
+          <button class="planner-slot weapon-planner-slot" type="button" data-planner-slot="primary">
+            <span class="planner-slot-label">Primary</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot weapon-planner-slot" type="button" data-planner-slot="secondary">
+            <span class="planner-slot-label">Secondary</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot weapon-planner-slot" type="button" data-planner-slot="range">
+            <span class="planner-slot-label">Range</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+
+          <button class="planner-slot weapon-planner-slot" type="button" data-planner-slot="ammo">
+            <span class="planner-slot-label">Ammo</span>
+            <span class="planner-slot-item">Empty</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="planner-slot-group planner-any-group">
+        <header class="planner-section-heading">
+          <div>
+            <p class="eyebrow">EQL special positions</p>
+            <h3>Any Slots</h3>
+          </div>
+
+          <p>
+            Any normally equippable item can use either position.
+          </p>
+        </header>
+
+        <div class="any-slot-grid">
+          <button class="planner-slot weapon-planner-slot any-planner-slot" type="button" data-planner-slot="any_1" title="Official EQL equipment position 0">
+            <span class="planner-slot-label">Any 1</span>
+            <span class="planner-slot-official-name">Equip 0</span>
+            <span class="planner-slot-item">Any equippable item</span>
+          </button>
+
+          <button class="planner-slot weapon-planner-slot any-planner-slot" type="button" data-planner-slot="any_2" title="Official EQL equipment position 21">
+            <span class="planner-slot-label">Any 2</span>
+            <span class="planner-slot-official-name">Equip 21</span>
+            <span class="planner-slot-item">Any equippable item</span>
+          </button>
+        </div>
+      </section>
+    </section>
+  </section>
 </section>
 <section aria-label="Explore zones" class="app-view" data-view-panel="zones" hidden="" id="zones-view">
 <header class="view-header">
