@@ -2243,3 +2243,133 @@ footer {
     grid-column: auto;
   }
 }
+
+
+/*
+ * Phase 3: compact results toolbar
+ */
+
+.summary-grid--compact {
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+}
+
+.results-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.results-toolbar__summary {
+  min-width: 0;
+}
+
+.results-toolbar__headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+
+.results-toolbar__headline strong {
+  color: var(--accent-light);
+  font-size: 1.25rem;
+}
+
+.results-zone-summary {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.results-toolbar__help {
+  max-width: 48rem;
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.results-toolbar__controls {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 1rem;
+  flex: none;
+}
+
+.results-sort-control {
+  min-width: 12rem;
+}
+
+.result-view-control {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.result-view-control__label {
+  line-height: 1;
+}
+
+.result-view-toggle {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+}
+
+.result-view-toggle button {
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: 0;
+  padding-inline: 0.85rem;
+}
+
+.result-view-toggle button + button {
+  border-left: 1px solid var(--border);
+}
+
+.result-view-toggle button.is-active {
+  background: rgb(201 168 91 / 16%);
+  color: var(--accent-light);
+}
+
+.result-view-toggle button:disabled {
+  color: var(--muted);
+}
+
+#result-table-container[hidden] {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  .results-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .results-toolbar__controls {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .results-sort-control {
+    flex: 1 1 13rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .summary-grid--compact {
+    grid-template-columns: 1fr;
+  }
+
+  .results-toolbar__controls {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
