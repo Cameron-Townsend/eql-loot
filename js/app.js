@@ -411,11 +411,22 @@ function captureElements() {
     )
   ];
 
+  elements.viewLinks = [
+    ...document.querySelectorAll(
+      "[data-app-view-link]"
+    )
+  ];
+
   elements.viewPanels = [
     ...document.querySelectorAll(
       "[data-view-panel]"
     )
   ];
+
+  elements.plannerNavCount =
+    document.querySelector(
+      "#planner-nav-count"
+    );
 
   elements.advancedFilterToggle =
     document.querySelector(
@@ -465,6 +476,16 @@ function bindEvents() {
     button.addEventListener(
       "click",
       handleViewChange
+    );
+  }
+
+  for (
+    const link
+    of elements.viewLinks
+  ) {
+    link.addEventListener(
+      "click",
+      handleViewLinkClick
     );
   }
 
@@ -664,6 +685,24 @@ function handleViewChange(event) {
   setActiveView(
     requestedView
   );
+}
+
+function handleViewLinkClick(event) {
+  const requestedView =
+    event.currentTarget.dataset.appViewLink;
+
+  if (!requestedView) {
+    return;
+  }
+
+  setActiveView(
+    requestedView
+  );
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
 }
 
 function setActiveView(viewName) {
@@ -3526,6 +3565,16 @@ function renderBuildSummary() {
   elements.buildEquippedCount.textContent =
     `${diagnostics.occupiedSlots} / ` +
     `${diagnostics.totalSlots} slots equipped`;
+
+  elements.plannerNavCount.textContent =
+    `${diagnostics.occupiedSlots}/` +
+    `${diagnostics.totalSlots}`;
+
+  elements.plannerNavCount.setAttribute(
+    "aria-label",
+    `${diagnostics.occupiedSlots} of ` +
+    `${diagnostics.totalSlots} loadout slots equipped`
+  );
 
   const occupiedEntries =
     getOccupiedSlotEntries(
