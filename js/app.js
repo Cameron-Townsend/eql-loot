@@ -871,6 +871,8 @@ function clearSingleFilter(filterKey, filterValue) {
     state.selectedStats.delete(filterValue);
   } else if (filterKey === "stats") {
     state.selectedStats.clear();
+  } else if (filterKey === "inventoryOnly") {
+    elements.inventoryOnly.value = "no";
   } else if (elementMap[filterKey]) {
     elementMap[filterKey].value = "";
   }
@@ -924,11 +926,23 @@ function renderActiveFilterChips(filters) {
   addChip("lore", "Lore", formatBooleanFilter(filters.lore));
   addChip("noDrop", "No Drop", formatBooleanFilter(filters.noDrop));
   addChip("questItem", "Quest item", formatBooleanFilter(filters.questItem));
-  addChip(
-    "inventoryOnly",
-    "Inventory only",
-    formatBooleanFilter(filters.inventoryOnly)
-  );
+  if (
+    filters.inventoryOnly === "yes"
+  ) {
+    addChip(
+      "inventoryOnly",
+      "Item usability",
+      "Inventory-only items"
+    );
+  } else if (
+    filters.inventoryOnly === "unknown"
+  ) {
+    addChip(
+      "inventoryOnly",
+      "Item usability",
+      "Unknown"
+    );
+  }
   addChip(
     "effectPresent",
     "Effect",
@@ -1023,7 +1037,11 @@ function countAdvancedFilters(filters) {
     filters.lore,
     filters.noDrop,
     filters.questItem,
-    filters.inventoryOnly,
+    (
+      filters.inventoryOnly === "no"
+        ? ""
+        : filters.inventoryOnly
+    ),
     filters.verification,
     filters.auditAction,
     filters.confidence,
@@ -1426,12 +1444,12 @@ function refreshConditionalFilters(filters) {
   populateBooleanSelect(
     elements.inventoryOnly,
     options.booleanCounts.inventoryOnly,
-    "Any",
+    "Show equippable + inventory items",
     filters.inventoryOnly,
     {
-      yes: "Inventory only",
-      no: "Equippable/non-inventory",
-      unknown: "Unknown"
+      yes: "Inventory-only items only",
+      no: "Equippable items only",
+      unknown: "Unknown usability"
     }
   );
 
@@ -4738,7 +4756,7 @@ function resetFilters() {
   elements.lore.value = "";
   elements.noDrop.value = "";
   elements.questItem.value = "";
-  elements.inventoryOnly.value = "";
+  elements.inventoryOnly.value = "no";
 
   elements.effectPresent.value = "";
   elements.effectType.value = "";
