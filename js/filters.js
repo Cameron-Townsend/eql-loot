@@ -518,9 +518,8 @@ export function filterRecords(
       }
 
       if (
-        !matchesBooleanFilter(
+        !matchesItemUsability(
           record,
-          "inventoryOnly",
           filters.inventoryOnly
         )
       ) {
@@ -844,13 +843,12 @@ export function createConditionalFilterOptions(
         "questItem"
       ),
 
-      inventoryOnly: countBooleanValues(
+      inventoryOnly: countItemUsabilityValues(
         getFacetRecords(
           records,
           filters,
           ["inventoryOnly"]
-        ),
-        "inventoryOnly"
+        )
       ),
 
       effectPresent: countEffectPresenceValues(
@@ -1152,6 +1150,39 @@ function countValues(
           right.value
         )
     );
+}
+
+function countItemUsabilityValues(
+  records
+) {
+  const counts = {
+    yes: 0,
+    no: 0,
+    unknown: 0
+  };
+
+  for (const record of records) {
+    const usability =
+      getItemUsability(
+        record
+      );
+
+    if (
+      usability ===
+      "inventory"
+    ) {
+      counts.yes += 1;
+    } else if (
+      usability ===
+      "equippable"
+    ) {
+      counts.no += 1;
+    } else {
+      counts.unknown += 1;
+    }
+  }
+
+  return counts;
 }
 
 function countBooleanValues(
@@ -1708,6 +1739,148 @@ function matchesNpcLevelRange(
   }
 
   return true;
+}
+
+function matchesItemUsability(
+  record,
+  filterValue
+) {
+  if (!filterValue) {
+    return true;
+  }
+
+  const usability =
+    getItemUsability(
+      record
+    );
+
+  if (
+    filterValue === "yes"
+  ) {
+    return (
+      usability ===
+      "inventory"
+    );
+  }
+
+  if (
+    filterValue === "no"
+  ) {
+    return (
+      usability ===
+      "equippable"
+    );
+  }
+
+  if (
+    filterValue ===
+    "unknown"
+  ) {
+    return (
+      usability ===
+        "unknown" ||
+      usability ===
+        "non_equippable"
+    );
+  }
+
+  return true;
+}
+
+/*
+ * Resolve item usability without changing source data.
+ *
+ * Explicit master-schema values always win. When new or legacy batches leave
+ * equippable/inventory_only blank, a real equipment slot is used as a browsing
+ * inference. This preserves blank semantics while keeping wearable loot visible.
+ */
+function getItemUsability(
+  record
+) {
+  const inventoryOnly =
+    getBooleanValue(
+      record,
+      "inventoryOnly"
+    );
+
+  const equippable =
+    getBooleanValue(
+      record,
+      "equippable"
+    );
+
+  if (
+    inventoryOnly === true
+  ) {
+    return "inventory";
+  }
+
+  if (
+    equippable === true
+  ) {
+    return "equippable";
+  }
+
+  if (
+    inventoryOnly === false
+  ) {
+    return "equippable";
+  }
+
+  if (
+    equippable === false
+  ) {
+    return "non_equippable";
+  }
+
+  const slots =
+    splitList(
+      getField(
+        record,
+        "slot"
+      )
+    )
+      .map(
+        normalizeLower
+      )
+      .filter(Boolean);
+
+  const nonEquipmentSlotValues =
+    new Set([
+      "inventory",
+      "inventory only",
+      "none",
+      "no slot",
+      "not equippable",
+      "unknown",
+      "n/a",
+      "na"
+    ]);
+
+  const hasEquipmentSlot =
+    slots.some(
+      slot =>
+        !nonEquipmentSlotValues.has(
+          slot
+        )
+    );
+
+  if (hasEquipmentSlot) {
+    return "equippable";
+  }
+
+  const hasInventorySlot =
+    slots.some(
+      slot =>
+        slot === "inventory" ||
+        slot === "inventory only"
+    );
+
+  if (hasInventorySlot) {
+    return "inventory";
+  }
+
+  return "unknown";
 }
 
 function matchesBooleanFilter(
