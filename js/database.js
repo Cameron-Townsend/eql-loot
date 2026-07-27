@@ -9,6 +9,10 @@ import {
   validateFileResults
 } from "./schema-validator.js";
 
+import {
+  resolveCanonicalRecords
+} from "./canonical-resolver.js";
+
 /*
  * EverQuest Legends Loot Explorer
  * Core database and compatibility layer
@@ -518,12 +522,13 @@ export const FIELD_ALIASES = {
 };
 
 /*
- * Only these fields are required for a row to function as a loot record.
- * New research fields remain optional.
+ * Only record_id is universally required at the file level.
+ *
+ * Individual loot rows without item_name are still reported by the schema
+ * validator. Correction, research, and metadata files may omit item_name.
  */
 export const REQUIRED_LOOT_COLUMNS = [
-  "record_id",
-  "item_name"
+  "record_id"
 ];
 
 export function buildDatabase(
@@ -579,31 +584,32 @@ export function buildDatabase(
     duplicateRecords: [],
     malformedRecords: [],
     missingRequiredColumns: [],
-    fileErrors: []
+    fileErrors: [],
+
+    canonicalRecordCount: 0,
+    defaultVisibleRecordCount: 0,
+    hiddenLootRecordCount: 0,
+    researchRecordCount: 0,
+    metadataRecordCount: 0,
+    correctionRecordCount: 0,
+
+    resolvedCorrectionCount: 0,
+    unresolvedCorrectionCount: 0,
+
+    resolvedCorrections: [],
+    unresolvedCorrections: []
   };
 
-  const recordsById =
-    new Map();
-
+  const normalizedRecords = [];
   const pendingEvidence = [];
   const pendingHistory = [];
-
-  /*
-   * Only canonical schema datasets should receive canonical record
-   * validation. Failed files remain included so load errors are reported.
-   */
   const validationFileResults = [];
 
   /*
-   * First pass:
+   * Load and normalize every canonical data file first.
    *
-   * - Account for every physical file.
-   * - Normalize every loot-style row.
-   * - Preserve evidence and history datasets.
-   * - Retain the existing same-record-ID revision behavior.
-   *
-   * Correction rows are identified by normalization but are not merged
-   * until Step 5.
+   * Correction resolution happens only after all files have been collected,
+   * making the result independent of manifest order and fetch completion.
    */
   for (const fileResult of fileResults) {
     if (!fileResult.loaded) {
@@ -637,6 +643,7 @@ export function buildDatabase(
     const datasetType =
       classifyDataset(
         fileResult.headers,
+
         fileResult.file?.filename ??
           fileResult.file?.path ??
           ""
@@ -694,10 +701,6 @@ export function buildDatabase(
         });
     }
 
-    /*
-     * Replace the raw parsed rows in this file result with normalized
-     * canonical rows so validation sees the same objects used by the app.
-     */
     fileResult.records =
       fileResult.records.map(
         rawRecord =>
@@ -712,13 +715,12 @@ export function buildDatabase(
     );
 
     for (const record of fileResult.records) {
-      const recordId =
-        getField(
+      if (
+        !getField(
           record,
           "recordId"
-        );
-
-      if (!recordId) {
+        )
+      ) {
         diagnostics
           .malformedRecords
           .push({
@@ -737,87 +739,9 @@ export function buildDatabase(
         continue;
       }
 
-      const existingRecord =
-        recordsById.get(
-          recordId
-        );
-
-      if (!existingRecord) {
-        recordsById.set(
-          recordId,
-          record
-        );
-
-        continue;
-      }
-
-      const incomingRevision =
-        parseRevision(
-          getField(
-            record,
-            "revision"
-          )
-        );
-
-      const existingRevision =
-        parseRevision(
-          getField(
-            existingRecord,
-            "revision"
-          )
-        );
-
-      if (
-        incomingRevision >
-        existingRevision
-      ) {
-        recordsById.set(
-          recordId,
-          record
-        );
-
-        diagnostics
-          .duplicateRecords
-          .push({
-            recordId,
-
-            action:
-              "Higher revision replaced earlier record",
-
-            keptRevision:
-              incomingRevision,
-
-            discardedRevision:
-              existingRevision,
-
-            keptFile:
-              record.__sourceFile ?? "",
-
-            discardedFile:
-              existingRecord.__sourceFile ?? ""
-          });
-      } else {
-        diagnostics
-          .duplicateRecords
-          .push({
-            recordId,
-
-            action:
-              "Earlier or equal revision retained",
-
-            keptRevision:
-              existingRevision,
-
-            discardedRevision:
-              incomingRevision,
-
-            keptFile:
-              existingRecord.__sourceFile ?? "",
-
-            discardedFile:
-              record.__sourceFile ?? ""
-          });
-      }
+      normalizedRecords.push(
+        record
+      );
     }
   }
 
@@ -825,10 +749,7 @@ export function buildDatabase(
     diagnostics.parserWarnings.length;
 
   /*
-   * Run validation only after every canonical file has been normalized.
-   *
-   * This allows correction targets to be checked across the entire loaded
-   * stack without depending on file order or fetch-completion timing.
+   * Validate all normalized canonical rows before merging corrections.
    */
   const validation =
     validateFileResults(
@@ -851,58 +772,13 @@ export function buildDatabase(
   diagnostics.validationWarningsByType =
     validation.warningsByType;
 
-  const records =
-    [...recordsById.values()];
-
-  attachRelatedRecords(
-    recordsById,
-    pendingEvidence,
-    "__evidence"
-  );
-
-  attachRelatedRecords(
-    recordsById,
-    pendingHistory,
-    "__changeHistory"
-  );
-
-  records.sort(
-    (left, right) => {
-      const zoneComparison =
-        naturalCompare(
-          getField(
-            left,
-            "zone"
-          ),
-          getField(
-            right,
-            "zone"
-          )
-        );
-
-      if (zoneComparison !== 0) {
-        return zoneComparison;
-      }
-
-      return naturalCompare(
-        getField(
-          left,
-          "itemName"
-        ),
-        getField(
-          right,
-          "itemName"
-        )
-      );
-    }
-  );
-
-  diagnostics.uniqueRecords =
-    records.length;
-
+  /*
+   * Preserve a normalization summary for all source rows, including rows
+   * that will later become corrections, research records, or metadata.
+   */
   const normalizationSummary =
     getNormalizationSummary(
-      records
+      normalizedRecords
     );
 
   diagnostics.normalizedRecords =
@@ -935,8 +811,113 @@ export function buildDatabase(
     normalizationSummary
       .extensionFieldCount;
 
+  /*
+   * Separate record types, resolve duplicate IDs, and apply corrections.
+   */
+  const resolution =
+    resolveCanonicalRecords(
+      normalizedRecords
+    );
+
+  diagnostics.duplicateRecords =
+    resolution.diagnostics
+      .duplicateRecords;
+
+  diagnostics.canonicalRecordCount =
+    resolution.diagnostics
+      .canonicalRecordCount;
+
+  diagnostics.defaultVisibleRecordCount =
+    resolution.diagnostics
+      .defaultVisibleRecordCount;
+
+  diagnostics.hiddenLootRecordCount =
+    resolution.diagnostics
+      .hiddenLootRecordCount;
+
+  diagnostics.researchRecordCount =
+    resolution.researchRecords.length;
+
+  diagnostics.metadataRecordCount =
+    resolution.metadataRecords.length;
+
+  diagnostics.correctionRecordCount =
+    resolution.correctionRecords.length;
+
+  diagnostics.resolvedCorrectionCount =
+    resolution.diagnostics
+      .resolvedCorrectionCount;
+
+  diagnostics.unresolvedCorrectionCount =
+    resolution.diagnostics
+      .unresolvedCorrectionCount;
+
+  diagnostics.resolvedCorrections =
+    resolution.diagnostics
+      .resolvedCorrections;
+
+  diagnostics.unresolvedCorrections =
+    resolution.diagnostics
+      .unresolvedCorrections;
+
+  /*
+   * Evidence and change-history records attach to canonical base records
+   * after correction overlays have been resolved.
+   */
+  const canonicalById =
+    new Map(
+      resolution.canonicalRecords.map(
+        record => [
+          getField(
+            record,
+            "recordId"
+          ),
+          record
+        ]
+      )
+    );
+
+  attachRelatedRecords(
+    canonicalById,
+    pendingEvidence,
+    "__evidence"
+  );
+
+  attachRelatedRecords(
+    canonicalById,
+    pendingHistory,
+    "__changeHistory"
+  );
+
+  /*
+   * Existing app code consumes database.records.
+   *
+   * Restricting this property to default-visible canonical loot keeps
+   * corrections, research records, quarantine rows, and metadata out of
+   * normal tables, filters, zone summaries, and build-planner searches.
+   */
+  diagnostics.uniqueRecords =
+    resolution.defaultRecords.length;
+
   return {
-    records,
+    records:
+      resolution.defaultRecords,
+
+    canonicalRecords:
+      resolution.canonicalRecords,
+
+    hiddenLootRecords:
+      resolution.hiddenLootRecords,
+
+    researchRecords:
+      resolution.researchRecords,
+
+    metadataRecords:
+      resolution.metadataRecords,
+
+    correctionRecords:
+      resolution.correctionRecords,
+
     diagnostics
   };
 }
@@ -1111,6 +1092,14 @@ function attachRelatedRecords(
 
     if (!lootRecord) {
       continue;
+    }
+
+    if (
+      !Array.isArray(
+        lootRecord[propertyName]
+      )
+    ) {
+      lootRecord[propertyName] = [];
     }
 
     lootRecord[propertyName].push(
@@ -1366,7 +1355,23 @@ export function isApproved(
 export function isQuarantined(
   record
 ) {
-  const status =
+  const recordType =
+    normalizeLower(
+      getField(
+        record,
+        "recordType"
+      )
+    );
+
+  const recordStatus =
+    normalizeLower(
+      getField(
+        record,
+        "recordStatus"
+      )
+    );
+
+  const verificationStatus =
     normalizeLower(
       getField(
         record,
@@ -1383,7 +1388,9 @@ export function isQuarantined(
     );
 
   return (
-    status.includes(
+    recordType === "research" ||
+    recordStatus === "quarantined" ||
+    verificationStatus.includes(
       "quarantine"
     ) ||
     auditAction.includes(
