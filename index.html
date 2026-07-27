@@ -410,7 +410,76 @@
 </section>
 </section>
 <section class="panel">
-<header class="results-toolbar"><div class="results-toolbar__summary"><p class="eyebrow">Database results</p><div class="results-toolbar__headline"><strong id="results-summary"><span id="match-count">0</span> items found</strong><span class="results-zone-summary"> across <span id="zone-count">0</span> zones</span></div><p class="results-toolbar__help">Select an item name for details, or equip it directly into the current loadout.</p></div><div class="results-toolbar__controls"><label class="results-sort-control">Sort results<select id="result-sort"><option value="zone-item">Zone, then item</option><option value="item">Item name</option><option value="npc-level">NPC level</option><option value="confidence">Confidence</option></select></label><div aria-label="Result view" class="result-view-control"><span class="result-view-control__label">View</span><div aria-label="Choose result layout" class="result-view-toggle" role="group"><button aria-pressed="true" class="is-active" data-result-view="table" type="button">Table</button><button aria-pressed="false" data-result-view="cards" disabled="" title="Card view arrives in Phase 4" type="button">Cards</button></div></div></div></header>
+<header class="results-toolbar">
+  <div class="results-toolbar__summary">
+    <p class="eyebrow">Database results</p>
+
+    <div class="results-toolbar__headline">
+      <strong id="results-summary">
+        <span id="match-count">0</span> items found
+      </strong>
+
+      <span class="results-zone-summary">
+        across <span id="zone-count">0</span> zones
+      </span>
+    </div>
+
+    <p class="results-toolbar__help">
+      Select an item for details, or equip it directly into the current loadout.
+    </p>
+  </div>
+
+  <div class="results-toolbar__controls">
+    <label class="results-sort-control">
+      Sort results
+
+      <select id="result-sort">
+        <option value="zone-item">Zone, then item</option>
+        <option value="item">Item name</option>
+        <option value="npc-level">NPC level</option>
+        <option value="confidence">Confidence</option>
+      </select>
+    </label>
+
+    <div
+      class="result-view-control"
+      aria-label="Result view"
+    >
+      <span class="result-view-control__label">View</span>
+
+      <div
+        class="result-view-toggle"
+        role="group"
+        aria-label="Choose result layout"
+      >
+        <button
+          type="button"
+          class="is-active"
+          data-result-view="table"
+          aria-pressed="true"
+        >
+          Table
+        </button>
+
+        <button
+          type="button"
+          data-result-view="cards"
+          aria-pressed="false"
+        >
+          Cards
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div
+  id="result-card-list"
+  class="result-card-list"
+  aria-live="polite"
+  hidden
+></div>
+
 <div class="table-wrapper" id="result-table-container">
 <table>
 <thead>
