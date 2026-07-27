@@ -3467,32 +3467,37 @@ function renderDiagnostics() {
   elements.diagnostics.replaceChildren();
 
   if (state.schemaRegistry) {
-  appendDiagnostic(
-    `Schema: ${state.schemaRegistry.schemaVersion}`
-  );
+    appendDiagnostic(
+      `Schema: ${
+        state.schemaRegistry.schemaVersion
+      }`
+    );
 
-  appendDiagnostic(
-    `Registered fields: ${
-      state.schemaRegistry.totalFieldCount
-    }`
-  );
+    appendDiagnostic(
+      `Registered fields: ${
+        state.schemaRegistry.totalFieldCount
+      }`
+    );
 
-  appendDiagnostic(
-    `Legacy base fields: ${
-      state.schemaRegistry.baseFieldCount
-    }`
-  );
+    appendDiagnostic(
+      `Legacy base fields: ${
+        state.schemaRegistry.baseFieldCount
+      }`
+    );
 
-  appendDiagnostic(
-    `List delimiter: ${
-      JSON.stringify(
-        state.schemaRegistry.listDelimiter
-      )
-    }`
-  );
-}
+    appendDiagnostic(
+      `List delimiter: ${
+        JSON.stringify(
+          state.schemaRegistry.listDelimiter
+        )
+      }`
+    );
+  }
 
-  if (!state.diagnostics) {
+  const diagnostics =
+    state.diagnostics;
+
+  if (!diagnostics) {
     appendMutedMessage(
       elements.diagnostics,
       "No diagnostics are available."
@@ -3503,56 +3508,102 @@ function renderDiagnostics() {
 
   const diagnosticFields = [
     [
-      "CSV files processed",
-      state.diagnostics.fileCount
+      "Files discovered",
+      diagnostics.filesDiscovered
     ],
     [
-      "Rows loaded",
-      state.diagnostics.rowCount
+      "Files loaded",
+      diagnostics.filesLoaded
     ],
     [
-      "Unique records",
-      state.records.length
+      "Files failed",
+      diagnostics.filesFailed
     ],
-        [
+    [
+      "Loot files",
+      diagnostics.lootFiles
+    ],
+    [
+      "Evidence files",
+      diagnostics.evidenceFiles
+    ],
+    [
+      "Change-history files",
+      diagnostics.historyFiles
+    ],
+    [
+      "Unknown datasets",
+      diagnostics.unknownFiles
+    ],
+    [
+      "Raw loot rows",
+      diagnostics.rawLootRecords
+    ],
+    [
+      "Unique record IDs",
+      diagnostics.uniqueRecords
+    ],
+    [
       "Normalized records",
-      state.diagnostics.normalizedRecords
+      diagnostics.normalizedRecords
     ],
     [
       "Normalized loot rows",
-      state.diagnostics.normalizedLootRecords
+      diagnostics.normalizedLootRecords
     ],
     [
       "Normalized correction rows",
-      state.diagnostics.normalizedCorrectionRecords
+      diagnostics.normalizedCorrectionRecords
     ],
     [
       "Normalized research rows",
-      state.diagnostics.normalizedResearchRecords
+      diagnostics.normalizedResearchRecords
     ],
     [
       "Normalized metadata rows",
-      state.diagnostics.normalizedMetadataRecords
+      diagnostics.normalizedMetadataRecords
     ],
     [
-      "Records with unknown extensions",
-      state.diagnostics.recordsWithExtensions
+      "Unknown record types",
+      diagnostics.normalizedUnknownTypeRecords
     ],
     [
-      "Unique unknown extension fields",
-      state.diagnostics.extensionFieldCount
+      "Records with extension fields",
+      diagnostics.recordsWithExtensions
     ],
     [
-      "Duplicate records resolved",
-      state.diagnostics.duplicateCount
+      "Unique extension field names",
+      diagnostics.extensionFieldCount
+    ],
+    [
+      "Duplicate record IDs resolved",
+      diagnostics.duplicateRecords?.length ??
+        0
     ],
     [
       "Rows missing record IDs",
-      state.diagnostics.missingRecordIdCount
+      diagnostics.malformedRecords?.length ??
+        0
     ],
     [
-      "Rows with parsing warnings",
-      state.diagnostics.warningCount
+      "Parser warnings",
+      diagnostics.parserWarningCount ??
+        0
+    ],
+    [
+      "Validation issues",
+      diagnostics.validationWarningCount ??
+        0
+    ],
+    [
+      "Validation errors",
+      diagnostics.validationErrorCount ??
+        0
+    ],
+    [
+      "Unregistered-field notices",
+      diagnostics.validationNoticeCount ??
+        0
     ]
   ];
 
@@ -3573,59 +3624,355 @@ function renderDiagnostics() {
       continue;
     }
 
-    const term =
-      document.createElement("dt");
-
-    const description =
-      document.createElement("dd");
-
-    term.textContent = label;
-    description.textContent =
-      String(value);
-
-    list.append(
-      term,
-      description
+    appendDiagnosticDefinition(
+      list,
+      label,
+      value
     );
   }
 
-  elements.diagnostics.append(list);
+  elements.diagnostics.append(
+    list
+  );
+
+  renderMissingColumnDiagnostics(
+    diagnostics
+  );
+
+  renderFileErrorDiagnostics(
+    diagnostics
+  );
+
+  renderValidationSummary(
+    diagnostics
+  );
+}
+
+function renderMissingColumnDiagnostics(
+  diagnostics
+) {
+  const problems =
+    diagnostics.missingRequiredColumns ??
+    [];
+
+  if (problems.length === 0) {
+    return;
+  }
+
+  const details =
+    createDiagnosticDetails(
+      "Missing required columns",
+      `${problems.length} affected file` +
+      `${problems.length === 1 ? "" : "s"}`
+    );
+
+  const list =
+    document.createElement("ul");
+
+  list.className =
+    "diagnostic-warning-list";
+
+  for (const problem of problems) {
+    const item =
+      document.createElement("li");
+
+    item.className =
+      "validation-error";
+
+    item.textContent =
+      `${problem.file}: missing ` +
+      `${problem.columns.join(", ")}`;
+
+    list.append(item);
+  }
+
+  details.append(list);
+  elements.diagnostics.append(details);
+}
+
+function renderFileErrorDiagnostics(
+  diagnostics
+) {
+  const fileErrors =
+    diagnostics.fileErrors ??
+    [];
+
+  if (fileErrors.length === 0) {
+    return;
+  }
+
+  const details =
+    createDiagnosticDetails(
+      "Failed CSV files",
+      `${fileErrors.length} file` +
+      `${fileErrors.length === 1 ? "" : "s"} failed`
+    );
+
+  const list =
+    document.createElement("ul");
+
+  list.className =
+    "diagnostic-warning-list";
+
+  for (const error of fileErrors) {
+    const item =
+      document.createElement("li");
+
+    item.className =
+      "validation-error";
+
+    item.textContent =
+      `${error.file}: ${error.error}`;
+
+    list.append(item);
+  }
+
+  details.append(list);
+  elements.diagnostics.append(details);
+}
+
+function renderValidationSummary(
+  diagnostics
+) {
+  const warnings =
+    diagnostics.validationWarnings ??
+    [];
+
+  const heading =
+    document.createElement("h3");
+
+  heading.textContent =
+    "Schema validation";
+
+  elements.diagnostics.append(
+    heading
+  );
+
+  if (warnings.length === 0) {
+    appendMutedMessage(
+      elements.diagnostics,
+      "No schema validation issues were reported."
+    );
+
+    return;
+  }
+
+  const summaryList =
+    document.createElement("dl");
+
+  summaryList.className =
+    "diagnostic-list";
+
+  appendDiagnosticDefinition(
+    summaryList,
+    "Errors",
+    diagnostics.validationErrorCount ??
+      0
+  );
+
+  appendDiagnosticDefinition(
+    summaryList,
+    "Notices",
+    diagnostics.validationNoticeCount ??
+      0
+  );
+
+  appendDiagnosticDefinition(
+    summaryList,
+    "Total issues",
+    diagnostics.validationWarningCount ??
+      warnings.length
+  );
+
+  elements.diagnostics.append(
+    summaryList
+  );
+
+  renderWarningCategoryDetails(
+    diagnostics.validationWarningsByType ??
+      {}
+  );
+
+  renderValidationWarningDetails(
+    warnings
+  );
+}
+
+function renderWarningCategoryDetails(
+  warningsByType
+) {
+  const entries =
+    Object.entries(
+      warningsByType
+    );
+
+  if (entries.length === 0) {
+    return;
+  }
+
+  const details =
+    createDiagnosticDetails(
+      "Warning categories",
+      `${entries.length} validation ` +
+      `categor${entries.length === 1 ? "y" : "ies"}`
+    );
+
+  const list =
+    document.createElement("ul");
+
+  list.className =
+    "diagnostic-warning-list";
+
+  for (
+    const [type, count]
+    of entries
+  ) {
+    const item =
+      document.createElement("li");
+
+    item.textContent =
+      `${formatDiagnosticType(type)}: ${count}`;
+
+    list.append(item);
+  }
+
+  details.append(list);
+  elements.diagnostics.append(details);
+}
+
+function renderValidationWarningDetails(
+  warnings
+) {
+  const maximumDisplayed =
+    250;
+
+  const details =
+    createDiagnosticDetails(
+      "Validation details",
+      `${warnings.length} reported issue` +
+      `${warnings.length === 1 ? "" : "s"}`
+    );
+
+  const list =
+    document.createElement("ul");
+
+  list.className =
+    "diagnostic-warning-list";
+
+  for (
+    const warning
+    of warnings.slice(
+      0,
+      maximumDisplayed
+    )
+  ) {
+    const item =
+      document.createElement("li");
+
+    item.className =
+      `validation-${
+        warning.severity ||
+        "warning"
+      }`;
+
+    item.textContent =
+      warning.message ||
+      JSON.stringify(warning);
+
+    list.append(item);
+  }
+
+  details.append(list);
 
   if (
-    Array.isArray(
-      state.diagnostics.warnings
-    ) &&
-    state.diagnostics.warnings.length > 0
+    warnings.length >
+    maximumDisplayed
   ) {
-    const warningHeading =
-      document.createElement("h3");
+    const remainder =
+      document.createElement("p");
 
-    warningHeading.textContent =
-      "Warnings";
+    remainder.className =
+      "muted-message";
 
-    const warningList =
-      document.createElement("ul");
+    remainder.textContent =
+      `${warnings.length - maximumDisplayed} ` +
+      "additional issues are not displayed.";
 
-    for (
-      const warning
-      of state.diagnostics.warnings
-    ) {
-      const item =
-        document.createElement("li");
-
-      item.textContent =
-        typeof warning === "string"
-          ? warning
-          : JSON.stringify(warning);
-
-      warningList.append(item);
-    }
-
-    elements.diagnostics.append(
-      warningHeading,
-      warningList
-    );
+    details.append(remainder);
   }
+
+  elements.diagnostics.append(details);
+}
+
+function createDiagnosticDetails(
+  titleText,
+  subtitleText
+) {
+  const details =
+    document.createElement("details");
+
+  details.className =
+    "detail-section";
+
+  const summary =
+    document.createElement("summary");
+
+  const title =
+    document.createElement("strong");
+
+  const subtitle =
+    document.createElement("span");
+
+  title.textContent =
+    titleText;
+
+  subtitle.textContent =
+    subtitleText;
+
+  summary.append(
+    title,
+    subtitle
+  );
+
+  details.append(summary);
+
+  return details;
+}
+
+function appendDiagnosticDefinition(
+  container,
+  label,
+  value
+) {
+  const term =
+    document.createElement("dt");
+
+  const description =
+    document.createElement("dd");
+
+  term.textContent =
+    label;
+
+  description.textContent =
+    String(value);
+
+  container.append(
+    term,
+    description
+  );
+}
+
+function formatDiagnosticType(type) {
+  return String(type ?? "")
+    .replace(
+      /[-_]+/g,
+      " "
+    )
+    .replace(
+      /\b\w/g,
+      character =>
+        character.toUpperCase()
+    );
 }
 
 function handleGenericDialogBackdropClick(
