@@ -3,6 +3,10 @@ import {
   getNormalizationSummary,
   normalizeRecord
 } from "./schema-normalizer.js";
+
+import {
+  validateFileResults
+} from "./schema-validator.js";
 /*
  * EverQuest Legends Loot Explorer
  * Core database and compatibility layer
@@ -524,14 +528,22 @@ export function buildDatabase(
   fileResults,
   registry
 ) {
-    if (!registry) {
+  if (!Array.isArray(fileResults)) {
+    throw new Error(
+      "Database construction requires a file-results array."
+    );
+  }
+
+  if (!registry) {
     throw new Error(
       "Database construction requires the loaded EQL schema registry."
     );
   }
-  
+
   const diagnostics = {
-    filesDiscovered: fileResults.length,
+    filesDiscovered:
+      fileResults.length,
+
     filesLoaded: 0,
     filesFailed: 0,
 
@@ -553,23 +565,51 @@ export function buildDatabase(
     recordsWithExtensions: 0,
     extensionFieldCount: 0,
 
+    parserWarnings: [],
+    parserWarningCount: 0,
+
+    validationWarnings: [],
+    validationWarningCount: 0,
+    validationErrorCount: 0,
+    validationNoticeCount: 0,
+    validationWarningsByType: {},
+
     duplicateRecords: [],
     malformedRecords: [],
     missingRequiredColumns: [],
     fileErrors: []
   };
 
-  const recordsById = new Map();
+  const recordsById =
+    new Map();
+
   const pendingEvidence = [];
   const pendingHistory = [];
 
+  /*
+   * First pass:
+   *
+   * - Account for every physical file.
+   * - Normalize every loot-style row.
+   * - Preserve evidence and history datasets.
+   * - Retain the existing same-record-ID revision behavior.
+   *
+   * Correction rows are identified by normalization but are not merged
+   * until Step 5.
+   */
   for (const fileResult of fileResults) {
     if (!fileResult.loaded) {
       diagnostics.filesFailed += 1;
 
       diagnostics.fileErrors.push({
-        file: fileResult.file.filename,
-        error: fileResult.error
+        file:
+          fileResult.file?.filename ??
+          fileResult.file?.path ??
+          "Unknown CSV",
+
+        error:
+          fileResult.error ||
+          "File could not be loaded."
       });
 
       continue;
@@ -577,20 +617,36 @@ export function buildDatabase(
 
     diagnostics.filesLoaded += 1;
 
-    const datasetType = classifyDataset(
-      fileResult.headers,
-      fileResult.file.filename
+    collectFileParserWarnings(
+      fileResult,
+      diagnostics
     );
+
+    const datasetType =
+      classifyDataset(
+        fileResult.headers,
+        fileResult.file?.filename ??
+          fileResult.file?.path ??
+          ""
+      );
 
     if (datasetType === "evidence") {
       diagnostics.evidenceFiles += 1;
-      pendingEvidence.push(...fileResult.records);
+
+      pendingEvidence.push(
+        ...fileResult.records
+      );
+
       continue;
     }
 
     if (datasetType === "history") {
       diagnostics.historyFiles += 1;
-      pendingHistory.push(...fileResult.records);
+
+      pendingHistory.push(
+        ...fileResult.records
+      );
+
       continue;
     }
 
@@ -600,72 +656,187 @@ export function buildDatabase(
     }
 
     diagnostics.lootFiles += 1;
-    diagnostics.rawLootRecords += fileResult.records.length;
 
-    const missingColumns = REQUIRED_LOOT_COLUMNS.filter(
-      column => !fileResult.headers.includes(column)
-    );
+    diagnostics.rawLootRecords +=
+      fileResult.records.length;
+
+    const missingColumns =
+      REQUIRED_LOOT_COLUMNS.filter(
+        column =>
+          !fileResult.headers.includes(
+            column
+          )
+      );
 
     if (missingColumns.length > 0) {
-      diagnostics.missingRequiredColumns.push({
-        file: fileResult.file.filename,
-        columns: missingColumns
-      });
+      diagnostics
+        .missingRequiredColumns
+        .push({
+          file:
+            fileResult.file?.filename ??
+            fileResult.file?.path ??
+            "Unknown CSV",
+
+          columns:
+            missingColumns
+        });
     }
 
-    for (const rawRecord of fileResult.records) {
-      const record = prepareLootRecord(
-  rawRecord,
-  registry
-);
-      const recordId = getField(record, "recordId");
+    /*
+     * Replace the raw parsed rows in this file result with normalized
+     * canonical rows so validation sees the same objects used by the app.
+     */
+    fileResult.records =
+      fileResult.records.map(
+        rawRecord =>
+          prepareLootRecord(
+            rawRecord,
+            registry
+          )
+      );
+
+    for (const record of fileResult.records) {
+      const recordId =
+        getField(
+          record,
+          "recordId"
+        );
 
       if (!recordId) {
-        diagnostics.malformedRecords.push({
-          file: record.__sourceFile,
-          row: record.__sourceRow,
-          problem: "Missing record_id"
-        });
+        diagnostics
+          .malformedRecords
+          .push({
+            file:
+              record.__sourceFile ??
+              fileResult.file?.filename ??
+              "Unknown CSV",
+
+            row:
+              record.__sourceRow ?? null,
+
+            problem:
+              "Missing record_id"
+          });
 
         continue;
       }
 
-      const existingRecord = recordsById.get(recordId);
+      const existingRecord =
+        recordsById.get(
+          recordId
+        );
 
       if (!existingRecord) {
-        recordsById.set(recordId, record);
+        recordsById.set(
+          recordId,
+          record
+        );
+
         continue;
       }
 
-      const incomingRevision = parseRevision(
-        getField(record, "revision")
-      );
+      const incomingRevision =
+        parseRevision(
+          getField(
+            record,
+            "revision"
+          )
+        );
 
-      const existingRevision = parseRevision(
-        getField(existingRecord, "revision")
-      );
+      const existingRevision =
+        parseRevision(
+          getField(
+            existingRecord,
+            "revision"
+          )
+        );
 
-      if (incomingRevision > existingRevision) {
-        recordsById.set(recordId, record);
-
-        diagnostics.duplicateRecords.push({
+      if (
+        incomingRevision >
+        existingRevision
+      ) {
+        recordsById.set(
           recordId,
-          action: "Higher revision replaced earlier record",
-          keptRevision: incomingRevision,
-          discardedRevision: existingRevision
-        });
+          record
+        );
+
+        diagnostics
+          .duplicateRecords
+          .push({
+            recordId,
+
+            action:
+              "Higher revision replaced earlier record",
+
+            keptRevision:
+              incomingRevision,
+
+            discardedRevision:
+              existingRevision,
+
+            keptFile:
+              record.__sourceFile ?? "",
+
+            discardedFile:
+              existingRecord.__sourceFile ?? ""
+          });
       } else {
-        diagnostics.duplicateRecords.push({
-          recordId,
-          action: "Earlier or equal revision retained",
-          keptRevision: existingRevision,
-          discardedRevision: incomingRevision
-        });
+        diagnostics
+          .duplicateRecords
+          .push({
+            recordId,
+
+            action:
+              "Earlier or equal revision retained",
+
+            keptRevision:
+              existingRevision,
+
+            discardedRevision:
+              incomingRevision,
+
+            keptFile:
+              existingRecord.__sourceFile ?? "",
+
+            discardedFile:
+              record.__sourceFile ?? ""
+          });
       }
     }
   }
 
-  const records = [...recordsById.values()];
+  diagnostics.parserWarningCount =
+    diagnostics.parserWarnings.length;
+
+  /*
+   * Run validation only after every loot file has been normalized.
+   *
+   * This allows correction targets to be checked across the entire loaded
+   * stack without depending on file order or fetch-completion timing.
+   */
+  const validation =
+    validateFileResults(
+      fileResults,
+      registry
+    );
+
+  diagnostics.validationWarnings =
+    validation.warnings;
+
+  diagnostics.validationWarningCount =
+    validation.warningCount;
+
+  diagnostics.validationErrorCount =
+    validation.errorCount;
+
+  diagnostics.validationNoticeCount =
+    validation.noticeCount;
+
+  diagnostics.validationWarningsByType =
+    validation.warningsByType;
+
+  const records =
+    [...recordsById.values()];
 
   attachRelatedRecords(
     recordsById,
@@ -679,23 +850,38 @@ export function buildDatabase(
     "__changeHistory"
   );
 
-  records.sort((left, right) => {
-    const zoneComparison = naturalCompare(
-      getField(left, "zone"),
-      getField(right, "zone")
-    );
+  records.sort(
+    (left, right) => {
+      const zoneComparison =
+        naturalCompare(
+          getField(
+            left,
+            "zone"
+          ),
+          getField(
+            right,
+            "zone"
+          )
+        );
 
-    if (zoneComparison !== 0) {
-      return zoneComparison;
+      if (zoneComparison !== 0) {
+        return zoneComparison;
+      }
+
+      return naturalCompare(
+        getField(
+          left,
+          "itemName"
+        ),
+        getField(
+          right,
+          "itemName"
+        )
+      );
     }
+  );
 
-    return naturalCompare(
-      getField(left, "itemName"),
-      getField(right, "itemName")
-    );
-  });
-
-    diagnostics.uniqueRecords =
+  diagnostics.uniqueRecords =
     records.length;
 
   const normalizationSummary =
@@ -710,27 +896,81 @@ export function buildDatabase(
     normalizationSummary.lootRecords;
 
   diagnostics.normalizedCorrectionRecords =
-    normalizationSummary.correctionRecords;
+    normalizationSummary
+      .correctionRecords;
 
   diagnostics.normalizedResearchRecords =
-    normalizationSummary.researchRecords;
+    normalizationSummary
+      .researchRecords;
 
   diagnostics.normalizedMetadataRecords =
-    normalizationSummary.metadataRecords;
+    normalizationSummary
+      .metadataRecords;
 
   diagnostics.normalizedUnknownTypeRecords =
-    normalizationSummary.unknownTypeRecords;
+    normalizationSummary
+      .unknownTypeRecords;
 
   diagnostics.recordsWithExtensions =
-    normalizationSummary.recordsWithExtensions;
+    normalizationSummary
+      .recordsWithExtensions;
 
   diagnostics.extensionFieldCount =
-    normalizationSummary.extensionFieldCount;
+    normalizationSummary
+      .extensionFieldCount;
 
   return {
     records,
     diagnostics
   };
+}
+
+function collectFileParserWarnings(
+  fileResult,
+  diagnostics
+) {
+  if (
+    !Array.isArray(
+      fileResult.warnings
+    )
+  ) {
+    return;
+  }
+
+  const fileName =
+    fileResult.file?.filename ??
+    fileResult.file?.path ??
+    "Unknown CSV";
+
+  for (
+    const warning
+    of fileResult.warnings
+  ) {
+    diagnostics.parserWarnings.push({
+      file:
+        fileName,
+
+      type:
+        warning.type ??
+        "csv-parser-warning",
+
+      sourceRow:
+        warning.sourceRow ??
+        null,
+
+      expectedColumns:
+        warning.expectedColumns ??
+        null,
+
+      actualColumns:
+        warning.actualColumns ??
+        null,
+
+      message:
+        warning.message ??
+        `${fileName}: CSV parsing warning.`
+    });
+  }
 }
 
 export function classifyDataset(headers, filename = "") {
