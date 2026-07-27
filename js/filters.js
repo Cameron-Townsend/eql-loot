@@ -358,238 +358,296 @@ export function createFilterOptions(records) {
       "targetPriority"
     ),
 
-    effectTypes: getAvailableEffectTypes(records),
+    effectTypes: getAvailableEffectTypes(
+      records
+    ),
 
-    focusEffects: getAvailableFocusEffects(records),
+    focusEffects: getAvailableFocusEffects(
+      records
+    ),
 
-    stats: getAvailableStats(records)
+    stats: getAvailableStats(
+      records
+    )
   };
 }
 
-export function filterRecords(records, filters) {
-  const searchText = normalizeLower(filters.search);
+export function filterRecords(
+  records,
+  filters
+) {
+  const searchText =
+    normalizeLower(
+      filters.search
+    );
 
-  return records.filter(record => {
-    if (
-      filters.approvedOnly &&
-      !isApproved(record)
-    ) {
-      return false;
+  return records.filter(
+    record => {
+      if (
+        filters.approvedOnly &&
+        !isApproved(record)
+      ) {
+        return false;
+      }
+
+      if (
+        filters.continent &&
+        getField(
+          record,
+          "continent"
+        ) !== filters.continent
+      ) {
+        return false;
+      }
+
+      if (
+        filters.zone &&
+        getField(
+          record,
+          "zone"
+        ) !== filters.zone
+      ) {
+        return false;
+      }
+
+      if (
+        filters.sourceNpc &&
+        getField(
+          record,
+          "sourceNpc"
+        ) !== filters.sourceNpc
+      ) {
+        return false;
+      }
+
+      if (
+        filters.category &&
+        getField(
+          record,
+          "itemCategory"
+        ) !== filters.category
+      ) {
+        return false;
+      }
+
+      if (
+        filters.slot &&
+        !containsListValue(
+          getField(
+            record,
+            "slot"
+          ),
+          filters.slot
+        )
+      ) {
+        return false;
+      }
+
+      if (
+        filters.className &&
+        !matchesCompatibilityField(
+          getPreferredClasses(
+            record
+          ),
+          filters.className
+        )
+      ) {
+        return false;
+      }
+
+      if (
+        filters.race &&
+        !matchesCompatibilityField(
+          getPreferredRaces(
+            record
+          ),
+          filters.race
+        )
+      ) {
+        return false;
+      }
+
+      if (
+        !matchesNpcLevelRange(
+          record,
+          filters.minimumNpcLevel,
+          filters.maximumNpcLevel
+        )
+      ) {
+        return false;
+      }
+
+      if (
+        !matchesBooleanFilter(
+          record,
+          "magic",
+          filters.magic
+        )
+      ) {
+        return false;
+      }
+
+      if (
+        !matchesBooleanFilter(
+          record,
+          "lore",
+          filters.lore
+        )
+      ) {
+        return false;
+      }
+
+      if (
+        !matchesBooleanFilter(
+          record,
+          "noDrop",
+          filters.noDrop
+        )
+      ) {
+        return false;
+      }
+
+      if (
+        !matchesBooleanFilter(
+          record,
+          "questItem",
+          filters.questItem
+        )
+      ) {
+        return false;
+      }
+
+      if (
+        !matchesBooleanFilter(
+          record,
+          "inventoryOnly",
+          filters.inventoryOnly
+        )
+      ) {
+        return false;
+      }
+
+      if (
+        !matchesEffectPresence(
+          record,
+          filters.effectPresent
+        )
+      ) {
+        return false;
+      }
+
+      if (
+        filters.effectType &&
+        !getRecordEffectTypes(
+          record
+        ).includes(
+          filters.effectType
+        )
+      ) {
+        return false;
+      }
+
+      if (
+        filters.focusEffect &&
+        !getRecordFocusEffects(
+          record
+        ).includes(
+          filters.focusEffect
+        )
+      ) {
+        return false;
+      }
+
+      if (
+        filters.effectTransferValue &&
+        getField(
+          record,
+          "effectTransferValue"
+        ) !==
+          filters.effectTransferValue
+      ) {
+        return false;
+      }
+
+      if (
+        filters.verification ===
+          "__confirmed_only__" &&
+        !isEqlConfirmed(record)
+      ) {
+        return false;
+      }
+
+      if (
+        filters.verification &&
+        filters.verification !==
+          "__confirmed_only__" &&
+        getField(
+          record,
+          "verificationStatus"
+        ) !==
+          filters.verification
+      ) {
+        return false;
+      }
+
+      if (
+        filters.auditAction &&
+        getField(
+          record,
+          "auditAction"
+        ) !==
+          filters.auditAction
+      ) {
+        return false;
+      }
+
+      if (
+        filters.confidence &&
+        getField(
+          record,
+          "confidence"
+        ) !==
+          filters.confidence
+      ) {
+        return false;
+      }
+
+      if (
+        filters.targetPriority &&
+        getField(
+          record,
+          "targetPriority"
+        ) !==
+          filters.targetPriority
+      ) {
+        return false;
+      }
+
+      if (
+        filters.stats.length > 0 &&
+        !recordMatchesStats(
+          record,
+          filters.stats,
+          filters.statMode
+        )
+      ) {
+        return false;
+      }
+
+      if (
+        searchText &&
+        !buildSearchText(
+          record
+        ).includes(
+          searchText
+        )
+      ) {
+        return false;
+      }
+
+      return true;
     }
-
-    if (
-      filters.continent &&
-      getField(record, "continent") !== filters.continent
-    ) {
-      return false;
-    }
-
-    if (
-      filters.zone &&
-      getField(record, "zone") !== filters.zone
-    ) {
-      return false;
-    }
-
-    if (
-      filters.sourceNpc &&
-      getField(record, "sourceNpc") !== filters.sourceNpc
-    ) {
-      return false;
-    }
-
-    if (
-      filters.category &&
-      getField(record, "itemCategory") !== filters.category
-    ) {
-      return false;
-    }
-
-    if (
-      filters.slot &&
-      !containsListValue(
-        getField(record, "slot"),
-        filters.slot
-      )
-    ) {
-      return false;
-    }
-
-    if (
-      filters.className &&
-      !matchesCompatibilityField(
-        getPreferredClasses(record),
-        filters.className
-      )
-    ) {
-      return false;
-    }
-
-    if (
-      filters.race &&
-      !matchesCompatibilityField(
-        getPreferredRaces(record),
-        filters.race
-      )
-    ) {
-      return false;
-    }
-
-    if (
-      !matchesNpcLevelRange(
-        record,
-        filters.minimumNpcLevel,
-        filters.maximumNpcLevel
-      )
-    ) {
-      return false;
-    }
-
-    if (
-      !matchesBooleanFilter(
-        record,
-        "magic",
-        filters.magic
-      )
-    ) {
-      return false;
-    }
-
-    if (
-      !matchesBooleanFilter(
-        record,
-        "lore",
-        filters.lore
-      )
-    ) {
-      return false;
-    }
-
-    if (
-      !matchesBooleanFilter(
-        record,
-        "noDrop",
-        filters.noDrop
-      )
-    ) {
-      return false;
-    }
-
-    if (
-      !matchesBooleanFilter(
-        record,
-        "questItem",
-        filters.questItem
-      )
-    ) {
-      return false;
-    }
-
-    if (
-      !matchesBooleanFilter(
-        record,
-        "inventoryOnly",
-        filters.inventoryOnly
-      )
-    ) {
-      return false;
-    }
-
-    if (
-      !matchesEffectPresence(
-        record,
-        filters.effectPresent
-      )
-    ) {
-      return false;
-    }
-
-    if (
-      filters.effectType &&
-      !getRecordEffectTypes(record).includes(
-        filters.effectType
-      )
-    ) {
-      return false;
-    }
-
-    if (
-      filters.focusEffect &&
-      !getRecordFocusEffects(record).includes(
-        filters.focusEffect
-      )
-    ) {
-      return false;
-    }
-
-    if (
-      filters.effectTransferValue &&
-      getField(record, "effectTransferValue") !==
-        filters.effectTransferValue
-    ) {
-      return false;
-    }
-
-    if (
-      filters.verification === "__confirmed_only__" &&
-      !isEqlConfirmed(record)
-    ) {
-      return false;
-    }
-
-    if (
-      filters.verification &&
-      filters.verification !== "__confirmed_only__" &&
-      getField(record, "verificationStatus") !==
-        filters.verification
-    ) {
-      return false;
-    }
-
-    if (
-      filters.auditAction &&
-      getField(record, "auditAction") !==
-        filters.auditAction
-    ) {
-      return false;
-    }
-
-    if (
-      filters.confidence &&
-      getField(record, "confidence") !==
-        filters.confidence
-    ) {
-      return false;
-    }
-
-    if (
-      filters.targetPriority &&
-      getField(record, "targetPriority") !==
-        filters.targetPriority
-    ) {
-      return false;
-    }
-
-    if (
-      filters.stats.length > 0 &&
-      !recordMatchesStats(
-        record,
-        filters.stats,
-        filters.statMode
-      )
-    ) {
-      return false;
-    }
-
-    if (
-      searchText &&
-      !buildSearchText(record).includes(searchText)
-    ) {
-      return false;
-    }
-
-    return true;
-  });
+  );
 }
 
 /*
@@ -606,47 +664,87 @@ export function createConditionalFilterOptions(
 ) {
   return {
     continents: countLogicalValues(
-      getFacetRecords(records, filters, ["continent"]),
+      getFacetRecords(
+        records,
+        filters,
+        ["continent"]
+      ),
       "continent"
     ),
 
     zones: countLogicalValues(
-      getFacetRecords(records, filters, ["zone"]),
+      getFacetRecords(
+        records,
+        filters,
+        ["zone"]
+      ),
       "zone"
     ),
 
     sourceNpcs: countLogicalValues(
-      getFacetRecords(records, filters, ["sourceNpc"]),
+      getFacetRecords(
+        records,
+        filters,
+        ["sourceNpc"]
+      ),
       "sourceNpc"
     ),
 
     categories: countLogicalValues(
-      getFacetRecords(records, filters, ["category"]),
+      getFacetRecords(
+        records,
+        filters,
+        ["category"]
+      ),
       "itemCategory"
     ),
 
     slots: countMultiValues(
-      getFacetRecords(records, filters, ["slot"]),
-      record => getField(record, "slot")
+      getFacetRecords(
+        records,
+        filters,
+        ["slot"]
+      ),
+      record =>
+        getField(
+          record,
+          "slot"
+        )
     ),
 
     classes: countCompatibilityValues(
-      getFacetRecords(records, filters, ["className"]),
+      getFacetRecords(
+        records,
+        filters,
+        ["className"]
+      ),
       getPreferredClasses
     ),
 
     races: countCompatibilityValues(
-      getFacetRecords(records, filters, ["race"]),
+      getFacetRecords(
+        records,
+        filters,
+        ["race"]
+      ),
       getPreferredRaces
     ),
 
     effectTypes: countDerivedValues(
-      getFacetRecords(records, filters, ["effectType"]),
+      getFacetRecords(
+        records,
+        filters,
+        ["effectType"]
+      ),
       getRecordEffectTypes
     ),
 
     focusEffects: countDerivedValues(
-      getFacetRecords(records, filters, ["focusEffect"]),
+      getFacetRecords(
+        records,
+        filters,
+        ["focusEffect"]
+      ),
       getRecordFocusEffects
     ),
 
@@ -660,53 +758,89 @@ export function createConditionalFilterOptions(
     ),
 
     verificationStatuses: countLogicalValues(
-      getFacetRecords(records, filters, ["verification"]),
+      getFacetRecords(
+        records,
+        filters,
+        ["verification"]
+      ),
       "verificationStatus"
     ),
 
     auditActions: countLogicalValues(
-      getFacetRecords(records, filters, ["auditAction"]),
+      getFacetRecords(
+        records,
+        filters,
+        ["auditAction"]
+      ),
       "auditAction"
     ),
 
     confidenceLevels: countLogicalValues(
-      getFacetRecords(records, filters, ["confidence"]),
+      getFacetRecords(
+        records,
+        filters,
+        ["confidence"]
+      ),
       "confidence"
     ),
 
     targetPriorities: countLogicalValues(
-      getFacetRecords(records, filters, ["targetPriority"]),
+      getFacetRecords(
+        records,
+        filters,
+        ["targetPriority"]
+      ),
       "targetPriority"
     ),
 
-    stats: countDerivedValues(
-      getFacetRecords(records, filters, ["stats"]),
-      getRecordStats
+    stats: countStatFacetValues(
+      records,
+      filters
     ),
 
     booleanCounts: {
       magic: countBooleanValues(
-        getFacetRecords(records, filters, ["magic"]),
+        getFacetRecords(
+          records,
+          filters,
+          ["magic"]
+        ),
         "magic"
       ),
 
       lore: countBooleanValues(
-        getFacetRecords(records, filters, ["lore"]),
+        getFacetRecords(
+          records,
+          filters,
+          ["lore"]
+        ),
         "lore"
       ),
 
       noDrop: countBooleanValues(
-        getFacetRecords(records, filters, ["noDrop"]),
+        getFacetRecords(
+          records,
+          filters,
+          ["noDrop"]
+        ),
         "noDrop"
       ),
 
       questItem: countBooleanValues(
-        getFacetRecords(records, filters, ["questItem"]),
+        getFacetRecords(
+          records,
+          filters,
+          ["questItem"]
+        ),
         "questItem"
       ),
 
       inventoryOnly: countBooleanValues(
-        getFacetRecords(records, filters, ["inventoryOnly"]),
+        getFacetRecords(
+          records,
+          filters,
+          ["inventoryOnly"]
+        ),
         "inventoryOnly"
       ),
 
@@ -717,36 +851,54 @@ export function createConditionalFilterOptions(
           ["effectPresent"]
         )
       )
-          },
+    },
 
     npcLevelRange: getAvailableNpcLevelRange(
       getFacetRecords(
         records,
         filters,
-        ["minimumNpcLevel", "maximumNpcLevel"]
+        [
+          "minimumNpcLevel",
+          "maximumNpcLevel"
+        ]
       )
     )
   };
 }
 
-export function getAvailableNpcLevelRange(records) {
+export function getAvailableNpcLevelRange(
+  records
+) {
   const levels = [];
 
   for (const record of records) {
-    const range = parseLevelRange(
-      getPreferredNpcLevel(record)
-    );
+    const range =
+      parseLevelRange(
+        getPreferredNpcLevel(
+          record
+        )
+      );
 
-    if (range.minimum !== null) {
-      levels.push(range.minimum);
+    if (
+      range.minimum !== null
+    ) {
+      levels.push(
+        range.minimum
+      );
     }
 
-    if (range.maximum !== null) {
-      levels.push(range.maximum);
+    if (
+      range.maximum !== null
+    ) {
+      levels.push(
+        range.maximum
+      );
     }
   }
 
-  if (levels.length === 0) {
+  if (
+    levels.length === 0
+  ) {
     return {
       minimum: null,
       maximum: null,
@@ -755,9 +907,18 @@ export function getAvailableNpcLevelRange(records) {
   }
 
   return {
-    minimum: Math.min(...levels),
-    maximum: Math.max(...levels),
-    recordCount: records.length
+    minimum:
+      Math.min(
+        ...levels
+      ),
+
+    maximum:
+      Math.max(
+        ...levels
+      ),
+
+    recordCount:
+      records.length
   };
 }
 
@@ -768,24 +929,90 @@ function getFacetRecords(
 ) {
   const facetFilters = {
     ...filters,
-    stats: [...(filters.stats ?? [])]
+    stats: [
+      ...(filters.stats ?? [])
+    ]
   };
 
-  for (const filterName of excludedFilterNames) {
-    if (filterName === "stats") {
+  for (
+    const filterName
+    of excludedFilterNames
+  ) {
+    if (
+      filterName === "stats"
+    ) {
       facetFilters.stats = [];
       continue;
     }
 
-    if (filterName === "approvedOnly") {
-      facetFilters.approvedOnly = false;
+    if (
+      filterName ===
+      "approvedOnly"
+    ) {
+      facetFilters.approvedOnly =
+        false;
+
       continue;
     }
 
-    facetFilters[filterName] = "";
+    facetFilters[filterName] =
+      "";
   }
 
-  return filterRecords(records, facetFilters);
+  return filterRecords(
+    records,
+    facetFilters
+  );
+}
+
+/*
+ * Calculate each stat option as though that stat were added to the current
+ * required-stat selection. This makes the parenthetical counts responsive
+ * to the selected stats instead of clearing all stat filters first.
+ */
+function countStatFacetValues(
+  records,
+  filters
+) {
+  const availableStats =
+    getAvailableStats(
+      records
+    );
+
+  const selectedStats = [
+    ...(filters.stats ?? [])
+  ];
+
+  return availableStats.map(
+    stat => {
+      const candidateStats =
+        selectedStats.includes(
+          stat
+        )
+          ? [...selectedStats]
+          : [
+              ...selectedStats,
+              stat
+            ];
+
+      const candidateFilters = {
+        ...filters,
+        stats:
+          candidateStats
+      };
+
+      return {
+        value:
+          stat,
+
+        count:
+          filterRecords(
+            records,
+            candidateFilters
+          ).length
+      };
+    }
+  );
 }
 
 function countLogicalValues(
@@ -794,53 +1021,97 @@ function countLogicalValues(
 ) {
   return countValues(
     records
-      .map(record =>
-        getField(record, logicalFieldName)
+      .map(
+        record =>
+          getField(
+            record,
+            logicalFieldName
+          )
       )
       .filter(Boolean)
   );
 }
 
-function countMultiValues(records, getter) {
+function countMultiValues(
+  records,
+  getter
+) {
   return countValues(
-    records.flatMap(record =>
-      splitList(getter(record))
+    records.flatMap(
+      record =>
+        splitList(
+          getter(record)
+        )
     )
   );
 }
 
-function countCompatibilityValues(records, getter) {
+function countCompatibilityValues(
+  records,
+  getter
+) {
   const values = [];
 
   for (const record of records) {
-    for (const value of splitList(getter(record))) {
-      const normalized = normalizeLower(value);
+    for (
+      const value
+      of splitList(
+        getter(record)
+      )
+    ) {
+      const normalized =
+        normalizeLower(
+          value
+        );
 
       if (
         normalized !== "all" &&
-        normalized !== "all classes" &&
-        normalized !== "all races" &&
-        !normalized.startsWith("all except")
+        normalized !==
+          "all classes" &&
+        normalized !==
+          "all races" &&
+        !normalized.startsWith(
+          "all except"
+        )
       ) {
-        values.push(value);
+        values.push(
+          value
+        );
       }
     }
   }
 
-  return countValues(values);
-}
-
-function countDerivedValues(records, getter) {
   return countValues(
-    records.flatMap(record => getter(record))
+    values
   );
 }
 
-function countValues(values) {
-  const counts = new Map();
+function countDerivedValues(
+  records,
+  getter
+) {
+  return countValues(
+    records.flatMap(
+      record =>
+        getter(record)
+    )
+  );
+}
 
-  for (const rawValue of values) {
-    const value = normalizeText(rawValue);
+function countValues(
+  values
+) {
+  const counts =
+    new Map();
+
+  for (
+    const rawValue
+    of values
+  ) {
+    const value =
+      normalizeText(
+        rawValue
+      );
 
     if (!value) {
       continue;
@@ -848,17 +1119,29 @@ function countValues(values) {
 
     counts.set(
       value,
-      (counts.get(value) ?? 0) + 1
+      (
+        counts.get(
+          value
+        ) ?? 0
+      ) + 1
     );
   }
 
-  return [...counts.entries()]
-    .map(([value, count]) => ({
-      value,
-      count
-    }))
-    .sort((left, right) =>
-      naturalCompare(left.value, right.value)
+  return [
+    ...counts.entries()
+  ]
+    .map(
+      ([value, count]) => ({
+        value,
+        count
+      })
+    )
+    .sort(
+      (left, right) =>
+        naturalCompare(
+          left.value,
+          right.value
+        )
     );
 }
 
@@ -873,14 +1156,17 @@ function countBooleanValues(
   };
 
   for (const record of records) {
-    const value = getBooleanValue(
-      record,
-      logicalFieldName
-    );
+    const value =
+      getBooleanValue(
+        record,
+        logicalFieldName
+      );
 
     if (value === true) {
       counts.yes += 1;
-    } else if (value === false) {
+    } else if (
+      value === false
+    ) {
       counts.no += 1;
     } else {
       counts.unknown += 1;
@@ -890,14 +1176,20 @@ function countBooleanValues(
   return counts;
 }
 
-function countEffectPresenceValues(records) {
+function countEffectPresenceValues(
+  records
+) {
   const counts = {
     yes: 0,
     no: 0
   };
 
   for (const record of records) {
-    if (getEffectText(record)) {
+    if (
+      getEffectText(
+        record
+      )
+    ) {
       counts.yes += 1;
     } else {
       counts.no += 1;
@@ -907,20 +1199,38 @@ function countEffectPresenceValues(records) {
   return counts;
 }
 
-export function getRecordStats(record) {
+export function getRecordStats(
+  record
+) {
   const statText = [
-    getField(record, "statsEql"),
-    getField(record, "statsRaw"),
-    getField(record, "statsClassic")
+    getField(
+      record,
+      "statsEql"
+    ),
+    getField(
+      record,
+      "statsRaw"
+    ),
+    getField(
+      record,
+      "statsClassic"
+    )
   ].join(" ");
 
   return STAT_DEFINITIONS
-    .filter(definition =>
-      definition.patterns.some(pattern =>
-        pattern.test(statText)
-      )
+    .filter(
+      definition =>
+        definition.patterns.some(
+          pattern =>
+            pattern.test(
+              statText
+            )
+        )
     )
-    .map(definition => definition.name);
+    .map(
+      definition =>
+        definition.name
+    );
 }
 
 /*
@@ -928,22 +1238,37 @@ export function getRecordStats(record) {
  *
  * One item may theoretically contain multiple focus families.
  */
-export function getRecordFocusEffects(record) {
-  const effectText = getEffectText(record);
+export function getRecordFocusEffects(
+  record
+) {
+  const effectText =
+    getEffectText(
+      record
+    );
 
   if (!effectText) {
     return [];
   }
 
-  const matchedFamilies = FOCUS_EFFECT_DEFINITIONS
-    .filter(definition =>
-      definition.patterns.some(pattern =>
-        pattern.test(effectText)
+  const matchedFamilies =
+    FOCUS_EFFECT_DEFINITIONS
+      .filter(
+        definition =>
+          definition.patterns.some(
+            pattern =>
+              pattern.test(
+                effectText
+              )
+          )
       )
-    )
-    .map(definition => definition.name);
+      .map(
+        definition =>
+          definition.name
+      );
 
-  if (matchedFamilies.length > 0) {
+  if (
+    matchedFamilies.length > 0
+  ) {
     return matchedFamilies;
   }
 
@@ -954,113 +1279,216 @@ export function getRecordFocusEffects(record) {
    * FOCUS_EFFECT_DEFINITIONS, create a cleaned family name by removing
    * ranks, percentages, and common tier suffixes.
    */
-  if (/\bFOCUS\b/i.test(effectText)) {
+  if (
+    /\bFOCUS\b/i.test(
+      effectText
+    )
+  ) {
     const fallbackName =
-      normalizeUnknownFocusName(effectText);
+      normalizeUnknownFocusName(
+        effectText
+      );
 
     return fallbackName
       ? [fallbackName]
-      : ["Other Focus Effect"];
+      : [
+          "Other Focus Effect"
+        ];
   }
 
   return [];
 }
 
-export function getRecordEffectTypes(record) {
-  const effectText = getEffectText(record);
+export function getRecordEffectTypes(
+  record
+) {
+  const effectText =
+    getEffectText(
+      record
+    );
 
   if (!effectText) {
     return [];
   }
 
-  const types = new Set();
+  const types =
+    new Set();
 
   if (
-    /\bPROC\b/i.test(effectText) ||
-    /\bPROCS?\b/i.test(effectText)
+    /\bPROC\b/i.test(
+      effectText
+    ) ||
+    /\bPROCS?\b/i.test(
+      effectText
+    )
   ) {
-    types.add("Proc");
+    types.add(
+      "Proc"
+    );
   }
 
   if (
-    /\bCLICK\b/i.test(effectText) ||
-    /\bCLICKY\b/i.test(effectText) ||
-    /\bRIGHT[\s-]*CLICK\b/i.test(effectText)
+    /\bCLICK\b/i.test(
+      effectText
+    ) ||
+    /\bCLICKY\b/i.test(
+      effectText
+    ) ||
+    /\bRIGHT[\s-]*CLICK\b/i.test(
+      effectText
+    )
   ) {
-    types.add("Click");
+    types.add(
+      "Click"
+    );
   }
 
   if (
-    /\bFOCUS\b/i.test(effectText) ||
-    getRecordFocusEffects(record).length > 0
+    /\bFOCUS\b/i.test(
+      effectText
+    ) ||
+    getRecordFocusEffects(
+      record
+    ).length > 0
   ) {
-    types.add("Focus");
+    types.add(
+      "Focus"
+    );
   }
 
   /*
    * If an effect is present but no explicit type word exists, keep it
    * available under Other rather than discarding it.
    */
-  if (types.size === 0) {
-    types.add("Other");
+  if (
+    types.size === 0
+  ) {
+    types.add(
+      "Other"
+    );
   }
 
-  return [...types];
+  return [
+    ...types
+  ];
 }
 
-export function getZoneSummary(records) {
-  const zoneMap = new Map();
+export function getZoneSummary(
+  records
+) {
+  const zoneMap =
+    new Map();
 
   for (const record of records) {
     const zone =
-      getField(record, "zone") || "Unknown zone";
+      getField(
+        record,
+        "zone"
+      ) ||
+      "Unknown zone";
 
-    if (!zoneMap.has(zone)) {
-      zoneMap.set(zone, {
+    if (
+      !zoneMap.has(
+        zone
+      )
+    ) {
+      zoneMap.set(
         zone,
-        itemCount: 0,
-        slots: new Set(),
-        confirmedCount: 0
-      });
+        {
+          zone,
+          itemCount: 0,
+          slots:
+            new Set(),
+
+          confirmedCount: 0
+        }
+      );
     }
 
-    const summary = zoneMap.get(zone);
+    const summary =
+      zoneMap.get(
+        zone
+      );
 
     summary.itemCount += 1;
 
-    for (const slot of splitList(
-      getField(record, "slot")
-    )) {
-      summary.slots.add(slot);
+    for (
+      const slot
+      of splitList(
+        getField(
+          record,
+          "slot"
+        )
+      )
+    ) {
+      summary.slots.add(
+        slot
+      );
     }
 
-    if (isEqlConfirmed(record)) {
+    if (
+      isEqlConfirmed(
+        record
+      )
+    ) {
       summary.confirmedCount += 1;
     }
   }
 
-  return [...zoneMap.values()]
-    .map(summary => ({
-      zone: summary.zone,
-      itemCount: summary.itemCount,
-      slotCount: summary.slots.size,
-      confirmedCount: summary.confirmedCount
-    }))
-    .sort((left, right) => {
-      if (right.itemCount !== left.itemCount) {
-        return right.itemCount - left.itemCount;
-      }
+  return [
+    ...zoneMap.values()
+  ]
+    .map(
+      summary => ({
+        zone:
+          summary.zone,
 
-      return naturalCompare(left.zone, right.zone);
-    });
+        itemCount:
+          summary.itemCount,
+
+        slotCount:
+          summary.slots.size,
+
+        confirmedCount:
+          summary.confirmedCount
+      })
+    )
+    .sort(
+      (left, right) => {
+        if (
+          right.itemCount !==
+          left.itemCount
+        ) {
+          return (
+            right.itemCount -
+            left.itemCount
+          );
+        }
+
+        return naturalCompare(
+          left.zone,
+          right.zone
+        );
+      }
+    );
 }
 
-function getAvailableEffectTypes(records) {
-  const values = new Set();
+function getAvailableEffectTypes(
+  records
+) {
+  const values =
+    new Set();
 
   for (const record of records) {
-    for (const type of getRecordEffectTypes(record)) {
-      values.add(type);
+    for (
+      const type
+      of getRecordEffectTypes(
+        record
+      )
+    ) {
+      values.add(
+        type
+      );
     }
   }
 
@@ -1071,51 +1499,108 @@ function getAvailableEffectTypes(records) {
     "Other"
   ];
 
-  return [...values].sort(
+  return [
+    ...values
+  ].sort(
     (left, right) =>
-      preferredOrder.indexOf(left) -
-      preferredOrder.indexOf(right)
+      preferredOrder.indexOf(
+        left
+      ) -
+      preferredOrder.indexOf(
+        right
+      )
   );
 }
 
-function getAvailableFocusEffects(records) {
-  const values = new Set();
+function getAvailableFocusEffects(
+  records
+) {
+  const values =
+    new Set();
 
   for (const record of records) {
     for (
       const focusEffect
-      of getRecordFocusEffects(record)
+      of getRecordFocusEffects(
+        record
+      )
     ) {
-      values.add(focusEffect);
+      values.add(
+        focusEffect
+      );
     }
   }
 
-  return [...values].sort(naturalCompare);
+  return [
+    ...values
+  ].sort(
+    naturalCompare
+  );
 }
 
-function getEffectText(record) {
+function getEffectText(
+  record
+) {
   return [
-    getField(record, "procClickFocus"),
-    getField(record, "effectDescription")
+    getField(
+      record,
+      "procClickFocus"
+    ),
+    getField(
+      record,
+      "effectDescription"
+    )
   ]
     .filter(Boolean)
     .join(" ")
     .trim();
 }
 
-function normalizeUnknownFocusName(effectText) {
-  let cleaned = normalizeText(effectText);
+function normalizeUnknownFocusName(
+  effectText
+) {
+  let cleaned =
+    normalizeText(
+      effectText
+    );
 
   cleaned = cleaned
-    .replace(/\bFOCUS(?:\s+EFFECT)?\s*[:\-]?\s*/gi, "")
-    .replace(/\bRANK\s*[IVXLCDM\d]+\b/gi, "")
-    .replace(/\bTIER\s*[IVXLCDM\d]+\b/gi, "")
-    .replace(/\bLEVEL\s*\d+\b/gi, "")
-    .replace(/\b[IVXLCDM]+\b$/gi, "")
-    .replace(/\b\d+(?:\.\d+)?\s*%\b/g, "")
-    .replace(/\b\d+\b$/g, "")
-    .replace(/\s+/g, " ")
-    .replace(/^[\s:;,\-–—]+|[\s:;,\-–—]+$/g, "")
+    .replace(
+      /\bFOCUS(?:\s+EFFECT)?\s*[:\-]?\s*/gi,
+      ""
+    )
+    .replace(
+      /\bRANK\s*[IVXLCDM\d]+\b/gi,
+      ""
+    )
+    .replace(
+      /\bTIER\s*[IVXLCDM\d]+\b/gi,
+      ""
+    )
+    .replace(
+      /\bLEVEL\s*\d+\b/gi,
+      ""
+    )
+    .replace(
+      /\b[IVXLCDM]+\b$/gi,
+      ""
+    )
+    .replace(
+      /\b\d+(?:\.\d+)?\s*%\b/g,
+      ""
+    )
+    .replace(
+      /\b\d+\b$/g,
+      ""
+    )
+    .replace(
+      /\s+/g,
+      " "
+    )
+    .replace(
+      /^[\s:;,\-–—]+|[\s:;,\-–—]+$/g,
+      ""
+    )
     .trim();
 
   if (!cleaned) {
@@ -1127,21 +1612,36 @@ function normalizeUnknownFocusName(effectText) {
    */
   if (
     cleaned.length > 50 ||
-    cleaned.split(/\s+/).length > 7
+    cleaned.split(
+      /\s+/
+    ).length > 7
   ) {
     return "Other Focus Effect";
   }
 
-  return toTitleCase(cleaned);
+  return toTitleCase(
+    cleaned
+  );
 }
 
-function toTitleCase(value) {
-  return normalizeLower(value)
-    .split(/\s+/)
-    .map(word =>
-      word.length > 0
-        ? word[0].toUpperCase() + word.slice(1)
-        : word
+function toTitleCase(
+  value
+) {
+  return normalizeLower(
+    value
+  )
+    .split(
+      /\s+/
+    )
+    .map(
+      word =>
+        word.length > 0
+          ? (
+              word[0]
+                .toUpperCase() +
+              word.slice(1)
+            )
+          : word
     )
     .join(" ");
 }
@@ -1151,13 +1651,15 @@ function matchesNpcLevelRange(
   requestedMinimum,
   requestedMaximum
 ) {
-  const requestedMin = parseOptionalNumber(
-    requestedMinimum
-  );
+  const requestedMin =
+    parseOptionalNumber(
+      requestedMinimum
+    );
 
-  const requestedMax = parseOptionalNumber(
-    requestedMaximum
-  );
+  const requestedMax =
+    parseOptionalNumber(
+      requestedMaximum
+    );
 
   if (
     requestedMin === null &&
@@ -1166,9 +1668,12 @@ function matchesNpcLevelRange(
     return true;
   }
 
-  const recordRange = parseLevelRange(
-    getPreferredNpcLevel(record)
-  );
+  const recordRange =
+    parseLevelRange(
+      getPreferredNpcLevel(
+        record
+      )
+    );
 
   if (
     recordRange.minimum === null &&
@@ -1179,14 +1684,16 @@ function matchesNpcLevelRange(
 
   if (
     requestedMin !== null &&
-    recordRange.maximum < requestedMin
+    recordRange.maximum <
+      requestedMin
   ) {
     return false;
   }
 
   if (
     requestedMax !== null &&
-    recordRange.minimum > requestedMax
+    recordRange.minimum >
+      requestedMax
   ) {
     return false;
   }
@@ -1203,39 +1710,67 @@ function matchesBooleanFilter(
     return true;
   }
 
-  const booleanValue = getBooleanValue(
-    record,
-    logicalFieldName
-  );
+  const booleanValue =
+    getBooleanValue(
+      record,
+      logicalFieldName
+    );
 
-  if (filterValue === "yes") {
-    return booleanValue === true;
+  if (
+    filterValue === "yes"
+  ) {
+    return (
+      booleanValue === true
+    );
   }
 
-  if (filterValue === "no") {
-    return booleanValue === false;
+  if (
+    filterValue === "no"
+  ) {
+    return (
+      booleanValue === false
+    );
   }
 
-  if (filterValue === "unknown") {
-    return booleanValue === null;
+  if (
+    filterValue ===
+    "unknown"
+  ) {
+    return (
+      booleanValue === null
+    );
   }
 
   return true;
 }
 
-function matchesEffectPresence(record, filterValue) {
+function matchesEffectPresence(
+  record,
+  filterValue
+) {
   if (!filterValue) {
     return true;
   }
 
-  const effectText = getEffectText(record);
+  const effectText =
+    getEffectText(
+      record
+    );
 
-  if (filterValue === "yes") {
-    return effectText !== "";
+  if (
+    filterValue === "yes"
+  ) {
+    return (
+      effectText !== ""
+    );
   }
 
-  if (filterValue === "no") {
-    return effectText === "";
+  if (
+    filterValue === "no"
+  ) {
+    return (
+      effectText === ""
+    );
   }
 
   return true;
@@ -1246,104 +1781,291 @@ function recordMatchesStats(
   selectedStats,
   statMode
 ) {
-  const recordStats = new Set(
-    getRecordStats(record)
-  );
+  const recordStats =
+    new Set(
+      getRecordStats(
+        record
+      )
+    );
 
-  if (statMode === "any") {
-    return selectedStats.some(stat =>
-      recordStats.has(stat)
+  if (
+    statMode === "any"
+  ) {
+    return selectedStats.some(
+      stat =>
+        recordStats.has(
+          stat
+        )
     );
   }
 
-  return selectedStats.every(stat =>
-    recordStats.has(stat)
+  return selectedStats.every(
+    stat =>
+      recordStats.has(
+        stat
+      )
   );
 }
 
-function buildSearchText(record) {
+/*
+ * Search every non-internal canonical value while retaining explicitly
+ * derived fallback values and normalized effect families.
+ *
+ * Internal fields beginning with "__" are excluded so source diagnostics,
+ * parser metadata, and correction-provenance objects do not pollute search.
+ */
+function buildSearchText(
+  record
+) {
+  const explicitSearchValues = [
+    getField(
+      record,
+      "itemName"
+    ),
+    getField(
+      record,
+      "continent"
+    ),
+    getField(
+      record,
+      "zone"
+    ),
+    getField(
+      record,
+      "itemCategory"
+    ),
+    getField(
+      record,
+      "slot"
+    ),
+
+    getPreferredStats(
+      record
+    ),
+    getPreferredClasses(
+      record
+    ),
+    getPreferredRaces(
+      record
+    ),
+
+    getField(
+      record,
+      "sourceNpc"
+    ),
+    getPreferredNpcLevel(
+      record
+    ),
+
+    getField(
+      record,
+      "procClickFocus"
+    ),
+    getField(
+      record,
+      "effectDescription"
+    ),
+
+    getRecordFocusEffects(
+      record
+    ).join(" "),
+
+    getRecordEffectTypes(
+      record
+    ).join(" "),
+
+    getField(
+      record,
+      "dropFrequency"
+    ),
+    getField(
+      record,
+      "dropRateReported"
+    ),
+
+    getField(
+      record,
+      "generalValueNotes"
+    ),
+    getField(
+      record,
+      "spawnLocation"
+    ),
+    getField(
+      record,
+      "dropNotes"
+    ),
+
+    getField(
+      record,
+      "eqlChangesSummary"
+    ),
+    getField(
+      record,
+      "eqlVerificationNotes"
+    ),
+    getField(
+      record,
+      "researchNotes"
+    )
+  ];
+
+  const canonicalFieldValues =
+    Object.entries(
+      record
+    )
+      .filter(
+        ([fieldName]) =>
+          !fieldName.startsWith(
+            "__"
+          )
+      )
+      .flatMap(
+        ([, value]) =>
+          flattenSearchValue(
+            value
+          )
+      );
+
   return [
-    getField(record, "itemName"),
-    getField(record, "continent"),
-    getField(record, "zone"),
-    getField(record, "itemCategory"),
-    getField(record, "slot"),
-    getPreferredStats(record),
-    getPreferredClasses(record),
-    getPreferredRaces(record),
-    getField(record, "sourceNpc"),
-    getPreferredNpcLevel(record),
-    getField(record, "procClickFocus"),
-    getField(record, "effectDescription"),
-    getRecordFocusEffects(record).join(" "),
-    getRecordEffectTypes(record).join(" "),
-    getField(record, "dropFrequency"),
-    getField(record, "generalValueNotes"),
-    getField(record, "spawnLocation"),
-    getField(record, "dropNotes"),
-    getField(record, "eqlChangesSummary"),
-    getField(record, "eqlVerificationNotes"),
-    getField(record, "researchNotes")
+    ...explicitSearchValues,
+    ...canonicalFieldValues
   ]
-    .map(normalizeLower)
+    .map(
+      normalizeLower
+    )
+    .filter(Boolean)
     .join(" ");
+}
+
+function flattenSearchValue(
+  value
+) {
+  if (
+    value === null ||
+    value === undefined
+  ) {
+    return [];
+  }
+
+  if (
+    Array.isArray(value)
+  ) {
+    return value.flatMap(
+      flattenSearchValue
+    );
+  }
+
+  if (
+    typeof value ===
+      "object"
+  ) {
+    return Object.values(
+      value
+    ).flatMap(
+      flattenSearchValue
+    );
+  }
+
+  return [
+    String(value)
+  ];
 }
 
 function getUniqueLogicalValues(
   records,
   logicalFieldName
 ) {
-  return [...new Set(
-    records
-      .map(record =>
-        getField(record, logicalFieldName)
-      )
-      .filter(Boolean)
-  )].sort(naturalCompare);
+  return [
+    ...new Set(
+      records
+        .map(
+          record =>
+            getField(
+              record,
+              logicalFieldName
+            )
+        )
+        .filter(Boolean)
+    )
+  ].sort(
+    naturalCompare
+  );
 }
 
 function getLogicalMultiValues(
   records,
   logicalFieldName
 ) {
-  return [...new Set(
-    records.flatMap(record =>
-      splitList(
-        getField(record, logicalFieldName)
+  return [
+    ...new Set(
+      records.flatMap(
+        record =>
+          splitList(
+            getField(
+              record,
+              logicalFieldName
+            )
+          )
       )
     )
-  )].sort(naturalCompare);
+  ].sort(
+    naturalCompare
+  );
 }
 
 function getPreferredMultiValues(
   records,
   getter
 ) {
-  const values = new Set();
+  const values =
+    new Set();
 
   for (const record of records) {
-    for (const value of splitList(getter(record))) {
-      const normalized = normalizeLower(value);
+    for (
+      const value
+      of splitList(
+        getter(record)
+      )
+    ) {
+      const normalized =
+        normalizeLower(
+          value
+        );
 
       if (
         normalized !== "all" &&
-        !normalized.startsWith("all except")
+        !normalized.startsWith(
+          "all except"
+        )
       ) {
-        values.add(value);
+        values.add(
+          value
+        );
       }
     }
   }
 
-  return [...values].sort(naturalCompare);
+  return [
+    ...values
+  ].sort(
+    naturalCompare
+  );
 }
 
 function matchesCompatibilityField(
   fieldValue,
   selectedValue
 ) {
-  const normalizedField = normalizeLower(fieldValue);
+  const normalizedField =
+    normalizeLower(
+      fieldValue
+    );
+
   const normalizedSelection =
-    normalizeLower(selectedValue);
+    normalizeLower(
+      selectedValue
+    );
 
   if (!normalizedField) {
     return false;
@@ -1351,25 +2073,43 @@ function matchesCompatibilityField(
 
   if (
     normalizedField === "all" ||
-    normalizedField === "all races" ||
-    normalizedField === "all classes"
+    normalizedField ===
+      "all races" ||
+    normalizedField ===
+      "all classes"
   ) {
     return true;
   }
 
-  if (normalizedField.startsWith("all except")) {
-    const exclusions = splitList(
-      normalizedField.replace("all except", "")
-    ).map(normalizeLower);
+  if (
+    normalizedField.startsWith(
+      "all except"
+    )
+  ) {
+    const exclusions =
+      splitList(
+        normalizedField.replace(
+          "all except",
+          ""
+        )
+      ).map(
+        normalizeLower
+      );
 
     return !exclusions.includes(
       normalizedSelection
     );
   }
 
-  return splitList(normalizedField)
-    .map(normalizeLower)
-    .includes(normalizedSelection);
+  return splitList(
+    normalizedField
+  )
+    .map(
+      normalizeLower
+    )
+    .includes(
+      normalizedSelection
+    );
 }
 
 function containsListValue(
@@ -1377,41 +2117,78 @@ function containsListValue(
   selectedValue
 ) {
   const normalizedSelection =
-    normalizeLower(selectedValue);
+    normalizeLower(
+      selectedValue
+    );
 
-  return splitList(fieldValue)
-    .map(normalizeLower)
-    .includes(normalizedSelection);
+  return splitList(
+    fieldValue
+  )
+    .map(
+      normalizeLower
+    )
+    .includes(
+      normalizedSelection
+    );
 }
 
-function splitList(value) {
-  return normalizeText(value)
-    .split(/\s*(?:,|\/|\||;)\s*/)
-    .map(part => part.trim())
+function splitList(
+  value
+) {
+  return normalizeText(
+    value
+  )
+    .split(
+      /\s*(?:,|\/|\||;)\s*/
+    )
+    .map(
+      part =>
+        part.trim()
+    )
     .filter(Boolean);
 }
 
-function getAvailableStats(records) {
-  const stats = new Set();
+function getAvailableStats(
+  records
+) {
+  const stats =
+    new Set();
 
   for (const record of records) {
-    for (const stat of getRecordStats(record)) {
-      stats.add(stat);
+    for (
+      const stat
+      of getRecordStats(
+        record
+      )
+    ) {
+      stats.add(
+        stat
+      );
     }
   }
 
-  const canonicalOrder = STAT_DEFINITIONS.map(
-    definition => definition.name
-  );
+  const canonicalOrder =
+    STAT_DEFINITIONS.map(
+      definition =>
+        definition.name
+    );
 
-  return [...stats].sort(
+  return [
+    ...stats
+  ].sort(
     (left, right) =>
-      canonicalOrder.indexOf(left) -
-      canonicalOrder.indexOf(right)
+      canonicalOrder.indexOf(
+        left
+      ) -
+      canonicalOrder.indexOf(
+        right
+      )
   );
 }
 
-function parseOptionalNumber(value) {
+function parseOptionalNumber(
+  value
+) {
   if (
     value === null ||
     value === undefined ||
@@ -1420,9 +2197,12 @@ function parseOptionalNumber(value) {
     return null;
   }
 
-  const parsed = Number(value);
+  const parsed =
+    Number(value);
 
-  return Number.isFinite(parsed)
+  return Number.isFinite(
+    parsed
+  )
     ? parsed
     : null;
 }
