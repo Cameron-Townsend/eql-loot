@@ -83,6 +83,14 @@ async function initialize() {
     captureElements();
     validateRequiredElements();
     bindEvents();
+    handleResultViewChange({
+      currentTarget:
+        elements.resultViewButtons.find(
+          button =>
+            button.dataset.resultView ===
+            state.resultView
+        )
+    });
 
     updateStatus("Loading EQL schema registry…");
 
@@ -255,6 +263,20 @@ function captureElements() {
 
   elements.resultsBody =
     document.querySelector("#results-body");
+
+  elements.resultSort =
+    document.querySelector("#result-sort");
+
+  elements.resultViewButtons = [
+    ...document.querySelectorAll(
+      "[data-result-view]"
+    )
+  ];
+
+  elements.resultTableContainer =
+    document.querySelector(
+      "#result-table-container"
+    );
 
   elements.zoneSummaryBody =
     document.querySelector("#zone-summary-body");
@@ -502,6 +524,21 @@ function bindEvents() {
     "click",
     handleResultClick
   );
+
+  elements.resultSort.addEventListener(
+    "change",
+    handleResultSortChange
+  );
+
+  for (
+    const button
+    of elements.resultViewButtons
+  ) {
+    button.addEventListener(
+      "click",
+      handleResultViewChange
+    );
+  }
 
   elements.closeItemDialog.addEventListener(
     "click",
@@ -1656,16 +1693,137 @@ function updateNpcLevelHint(range) {
     `${range.recordCount === 1 ? "" : "s"}.`;
 }
 
-function applyCurrentFilters() {
-  const filters = getCurrentFilters();
+function handleResultSortChange() {
+  state.resultSort =
+    elements.resultSort.value ||
+    "zone-item";
 
-  state.filteredRecords = filterRecords(
-    state.records,
-    filters
-  );
+  sortFilteredRecords();
+  renderResults();
+}
 
+function handleResultViewChange(event) {
+  const requestedView =
+    event.currentTarget.dataset.resultView;
+
+  if (
+    !requestedView ||
+    event.currentTarget.disabled
+  ) {
+    return;
+  }
+
+  state.resultView = requestedView;
+
+  for (
+    const button
+    of elements.resultViewButtons
+  ) {
+    const isActive =
+      button.dataset.resultView ===
+      state.resultView;
+
+    button.classList.toggle(
+      "is-active",
+      isActive
+    );
+
+    button.setAttribute(
+      "aria-pressed",
+      String(isActive)
+    );
+  }
+
+  elements.resultTableContainer.hidden =
+    state.resultView !== "table";
+}
+
+function sortFilteredRecords() {
   state.filteredRecords.sort(
     (left, right) => {
+      if (state.resultSort === "item") {
+        return naturalCompare(
+          getField(left, "itemName"),
+          getField(right, "itemName")
+        );
+      }
+
+      if (state.resultSort === "npc-level") {
+        const leftLevel =
+          Number(getPreferredNpcLevel(left));
+
+        const rightLevel =
+          Number(getPreferredNpcLevel(right));
+
+        const safeLeftLevel =
+          Number.isFinite(leftLevel)
+            ? leftLevel
+            : Number.POSITIVE_INFINITY;
+
+        const safeRightLevel =
+          Number.isFinite(rightLevel)
+            ? rightLevel
+            : Number.POSITIVE_INFINITY;
+
+        if (safeLeftLevel !== safeRightLevel) {
+          return safeLeftLevel - safeRightLevel;
+        }
+
+        return naturalCompare(
+          getField(left, "itemName"),
+          getField(right, "itemName")
+        );
+      }
+
+      if (state.resultSort === "confidence") {
+        const confidenceOrder = new Map([
+          ["high", 0],
+          ["medium-high", 1],
+          ["medium", 2],
+          ["low-medium", 3],
+          ["low", 4]
+        ]);
+
+        const leftConfidence =
+          String(
+            getField(left, "confidence") ||
+            ""
+          ).trim().toLowerCase();
+
+        const rightConfidence =
+          String(
+            getField(right, "confidence") ||
+            ""
+          ).trim().toLowerCase();
+
+        const leftRank =
+          confidenceOrder.get(leftConfidence) ??
+          99;
+
+        const rightRank =
+          confidenceOrder.get(rightConfidence) ??
+          99;
+
+        if (leftRank !== rightRank) {
+          return leftRank - rightRank;
+        }
+
+        const confidenceComparison =
+          naturalCompare(
+            leftConfidence,
+            rightConfidence
+          );
+
+        if (confidenceComparison !== 0) {
+          return confidenceComparison;
+        }
+
+        return naturalCompare(
+          getField(left, "itemName"),
+          getField(right, "itemName")
+        );
+      }
+
       const zoneComparison = naturalCompare(
         getField(left, "zone"),
         getField(right, "zone")
@@ -1681,6 +1839,17 @@ function applyCurrentFilters() {
       );
     }
   );
+}
+
+function applyCurrentFilters() {
+  const filters = getCurrentFilters();
+
+  state.filteredRecords = filterRecords(
+    state.records,
+    filters
+  );
+
+  sortFilteredRecords();
 
   refreshConditionalFilters(filters);
   renderActiveFilterChips(filters);
