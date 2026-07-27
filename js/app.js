@@ -887,6 +887,8 @@ function countAdvancedFilters(filters) {
   const advancedValues = [
     filters.continent,
     filters.sourceNpc,
+    filters.minimumNpcLevel,
+    filters.maximumNpcLevel,
     filters.category,
     filters.race,
     filters.magic,
@@ -894,18 +896,14 @@ function countAdvancedFilters(filters) {
     filters.noDrop,
     filters.questItem,
     filters.inventoryOnly,
-    filters.effectPresent,
-    filters.effectType,
-    filters.focusEffect,
-    filters.effectTransferValue,
+    filters.verification,
     filters.auditAction,
     filters.confidence,
     filters.targetPriority
   ];
 
   return advancedValues.filter(hasValue).length +
-    (filters.approvedOnly ? 1 : 0) +
-    filters.stats.length;
+    (filters.approvedOnly ? 1 : 0);
 }
 
 function handleFilterChange() {
