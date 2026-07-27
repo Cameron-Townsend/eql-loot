@@ -841,52 +841,82 @@
     </section>
   </section>
 </section>
-<section aria-label="Explore zones" class="app-view" data-view-panel="zones" hidden="" id="zones-view">
-<header class="view-header">
-<p class="eyebrow">
-      Zone planning
-     </p>
-<h2>
-      Explore Zones
-     </h2>
-<p class="view-description">
-      Compare matching loot across zones using the active Browse filters.
-     </p>
-</header>
-<section class="panel">
-<div class="panel-header">
-<div>
-<p class="eyebrow">
-        Zone planning
-       </p>
-<h2>
-        Matching zones
-       </h2>
-</div>
-</div>
-<div class="table-wrapper zone-table">
-<table>
-<thead>
-<tr>
-<th>
-          Zone
-         </th>
-<th>
-          Matching items
-         </th>
-<th>
-          Slots represented
-         </th>
-<th>
-          EQL-confirmed
-         </th>
-</tr>
-</thead>
-<tbody id="zone-summary-body">
-</tbody>
-</table>
-</div>
-</section>
+<section
+  id="zones-view"
+  class="app-view"
+  data-view-panel="zones"
+  aria-label="Explore zones"
+  hidden
+>
+  <header class="view-header zones-view-header">
+    <div>
+      <p class="eyebrow">Zone planning</p>
+      <h2>Explore Zones</h2>
+
+      <p class="view-description">
+        Compare matching loot across zones using the active
+        Browse filters, then jump directly into a zone's items.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="zones-browse-button"
+      data-app-view-link="browse"
+    >
+      Return to Browse
+    </button>
+  </header>
+
+  <section class="panel zone-explorer-panel">
+    <header class="zone-explorer-toolbar">
+      <div>
+        <p class="eyebrow">Matching destinations</p>
+
+        <h3>
+          <span id="zone-explorer-count">0</span>
+          zones available
+        </h3>
+
+        <p class="zone-explorer-toolbar__help">
+          Zone cards reflect the filters currently active in Browse Loot.
+        </p>
+      </div>
+
+      <div class="zone-explorer-toolbar__controls">
+        <label class="zone-search-control">
+          Search zones
+
+          <input
+            id="zone-search-input"
+            type="search"
+            placeholder="Zone name…"
+          >
+        </label>
+
+        <label class="zone-sort-control">
+          Sort zones
+
+          <select id="zone-sort-select">
+            <option value="name">Zone name</option>
+            <option value="items">Most matching items</option>
+            <option value="level">Lowest NPC level</option>
+            <option value="confirmed">Most EQL-confirmed</option>
+          </select>
+        </label>
+      </div>
+    </header>
+
+    <div
+      id="zone-card-grid"
+      class="zone-card-grid"
+      aria-live="polite"
+    >
+      <p class="muted-message">
+        Zone cards will appear after the database loads.
+      </p>
+    </div>
+  </section>
 </section>
 <section aria-label="Research and data status" class="app-view" data-view-panel="research" hidden="" id="research-view">
 <header class="view-header">
