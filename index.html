@@ -310,22 +310,22 @@
 </select>
 </label>
 <label>
-          Inventory only
+          Item usability
           <select id="inventory-only-filter">
-<option value="">
-            Any
-           </option>
-<option value="yes">
-            Inventory only
-           </option>
-<option value="no">
-            Equippable/non-inventory
-           </option>
-<option value="unknown">
-            Unknown
-           </option>
-</select>
-</label>
+            <option value="">
+              Show equippable + inventory items
+            </option>
+            <option value="no" selected>
+              Equippable items only
+            </option>
+            <option value="yes">
+              Inventory-only items only
+            </option>
+            <option value="unknown">
+              Unknown usability
+            </option>
+          </select>
+        </label>
 </div>
 </section>
 <section class="advanced-filter-group">
