@@ -72,7 +72,9 @@ const state = {
   currentDetailRecord: null,
   activeView: "browse",
   resultView: "table",
-  resultSort: "zone-item"
+  resultSort: "zone-item",
+  zoneSearch: "",
+  zoneSort: "name"
 };
 
 const elements = {};
@@ -291,8 +293,25 @@ function captureElements() {
       "#result-card-list"
     );
 
-  elements.zoneSummaryBody =
-    document.querySelector("#zone-summary-body");
+  elements.zoneCardGrid =
+    document.querySelector(
+      "#zone-card-grid"
+    );
+
+  elements.zoneExplorerCount =
+    document.querySelector(
+      "#zone-explorer-count"
+    );
+
+  elements.zoneSearchInput =
+    document.querySelector(
+      "#zone-search-input"
+    );
+
+  elements.zoneSortSelect =
+    document.querySelector(
+      "#zone-sort-select"
+    );
 
   elements.diagnostics =
     document.querySelector("#diagnostics");
@@ -562,6 +581,21 @@ function bindEvents() {
   elements.resultCardList.addEventListener(
     "click",
     handleResultClick
+  );
+
+  elements.zoneCardGrid.addEventListener(
+    "click",
+    handleZoneCardClick
+  );
+
+  elements.zoneSearchInput.addEventListener(
+    "input",
+    handleZoneExplorerChange
+  );
+
+  elements.zoneSortSelect.addEventListener(
+    "change",
+    handleZoneExplorerChange
   );
 
   elements.resultSort.addEventListener(
@@ -2420,39 +2454,382 @@ function createVerificationBadge(status) {
 }
 
 function renderZoneSummary() {
-  const summaries = getZoneSummary(
-    state.filteredRecords
+  const summaries =
+    buildZoneExplorerSummaries();
+
+  const searchTerm =
+    state.zoneSearch
+      .trim()
+      .toLowerCase();
+
+  const visibleSummaries =
+    summaries
+      .filter(summary => {
+        if (!searchTerm) {
+          return true;
+        }
+
+        return [
+          summary.zone,
+          summary.continent
+        ]
+          .filter(hasValue)
+          .some(value =>
+            String(value)
+              .toLowerCase()
+              .includes(searchTerm)
+          );
+      })
+      .sort(compareZoneSummaries);
+
+  elements.zoneExplorerCount.textContent =
+    visibleSummaries.length;
+
+  elements.zoneCardGrid.replaceChildren();
+
+  if (visibleSummaries.length === 0) {
+    const message =
+      document.createElement("p");
+
+    message.className =
+      "zone-card__empty";
+
+    message.textContent =
+      searchTerm
+        ? "No matching zones were found."
+        : "No zones match the active Browse filters.";
+
+    elements.zoneCardGrid.append(message);
+    return;
+  }
+
+  for (const summary of visibleSummaries) {
+    elements.zoneCardGrid.append(
+      createZoneCard(summary)
+    );
+  }
+}
+
+function buildZoneExplorerSummaries() {
+  const baseSummaries =
+    getZoneSummary(
+      state.filteredRecords
+    );
+
+  const recordsByZone = new Map();
+
+  for (const record of state.filteredRecords) {
+    const zone =
+      getField(record, "zone");
+
+    if (!hasValue(zone)) {
+      continue;
+    }
+
+    if (!recordsByZone.has(zone)) {
+      recordsByZone.set(zone, []);
+    }
+
+    recordsByZone.get(zone).push(record);
+  }
+
+  return baseSummaries.map(summary => {
+    const records =
+      recordsByZone.get(summary.zone) ||
+      [];
+
+    const continents =
+      [...new Set(
+        records
+          .map(record =>
+            getField(record, "continent")
+          )
+          .filter(hasValue)
+      )]
+        .sort(naturalCompare);
+
+    const levelRange =
+      getZoneNpcLevelRange(records);
+
+    return {
+      ...summary,
+      continent:
+        continents.join(", "),
+      minimumNpcLevel:
+        levelRange.minimum,
+      maximumNpcLevel:
+        levelRange.maximum,
+      levelDisplay:
+        formatZoneLevelRange(levelRange)
+    };
+  });
+}
+
+function getZoneNpcLevelRange(records) {
+  const values = [];
+
+  for (const record of records) {
+    const levelText =
+      getPreferredNpcLevel(record);
+
+    const numbers =
+      String(levelText || "")
+        .match(/\d+(?:\.\d+)?/g);
+
+    if (!numbers) {
+      continue;
+    }
+
+    for (const number of numbers) {
+      const numericValue =
+        Number.parseFloat(number);
+
+      if (Number.isFinite(numericValue)) {
+        values.push(numericValue);
+      }
+    }
+  }
+
+  if (values.length === 0) {
+    return {
+      minimum: null,
+      maximum: null
+    };
+  }
+
+  return {
+    minimum: Math.min(...values),
+    maximum: Math.max(...values)
+  };
+}
+
+function formatZoneLevelRange(range) {
+  if (
+    range.minimum === null ||
+    range.maximum === null
+  ) {
+    return "Not recorded";
+  }
+
+  if (range.minimum === range.maximum) {
+    return String(range.minimum);
+  }
+
+  return (
+    `${range.minimum}–` +
+    `${range.maximum}`
+  );
+}
+
+function compareZoneSummaries(left, right) {
+  switch (state.zoneSort) {
+    case "items":
+      return (
+        right.itemCount -
+        left.itemCount
+      ) || naturalCompare(
+        left.zone,
+        right.zone
+      );
+
+    case "level": {
+      const leftLevel =
+        left.minimumNpcLevel ??
+        Number.POSITIVE_INFINITY;
+
+      const rightLevel =
+        right.minimumNpcLevel ??
+        Number.POSITIVE_INFINITY;
+
+      return (
+        leftLevel -
+        rightLevel
+      ) || naturalCompare(
+        left.zone,
+        right.zone
+      );
+    }
+
+    case "confirmed":
+      return (
+        right.confirmedCount -
+        left.confirmedCount
+      ) || naturalCompare(
+        left.zone,
+        right.zone
+      );
+
+    case "name":
+    default:
+      return naturalCompare(
+        left.zone,
+        right.zone
+      );
+  }
+}
+
+function createZoneCard(summary) {
+  const card =
+    document.createElement("article");
+
+  card.className = "zone-card";
+
+  const header =
+    document.createElement("header");
+
+  header.className =
+    "zone-card__header";
+
+  const name =
+    document.createElement("h3");
+
+  name.className =
+    "zone-card__name";
+
+  name.textContent =
+    summary.zone;
+
+  header.append(name);
+
+  if (hasValue(summary.continent)) {
+    const continent =
+      document.createElement("p");
+
+    continent.className =
+      "zone-card__continent";
+
+    continent.textContent =
+      summary.continent;
+
+    header.append(continent);
+  }
+
+  const body =
+    document.createElement("div");
+
+  body.className =
+    "zone-card__body";
+
+  appendZoneMetric(
+    body,
+    "Matching items",
+    summary.itemCount
   );
 
-  elements.zoneSummaryBody.replaceChildren();
+  appendZoneMetric(
+    body,
+    "Slots represented",
+    summary.slotCount
+  );
 
-  for (const summary of summaries) {
-    const row =
-      document.createElement("tr");
+  appendZoneMetric(
+    body,
+    "EQL-confirmed",
+    summary.confirmedCount
+  );
 
-    appendCell(row, summary.zone);
-    appendCell(row, summary.itemCount);
-    appendCell(row, summary.slotCount);
-    appendCell(row, summary.confirmedCount);
+  appendZoneMetric(
+    body,
+    "NPC levels",
+    summary.levelDisplay
+  );
 
-    elements.zoneSummaryBody.append(row);
+  const actions =
+    document.createElement("footer");
+
+  actions.className =
+    "zone-card__actions";
+
+  const viewButton =
+    document.createElement("button");
+
+  viewButton.type = "button";
+  viewButton.className =
+    "zone-card__view-button";
+
+  viewButton.dataset.zoneName =
+    summary.zone;
+
+  viewButton.textContent =
+    "View items";
+
+  actions.append(viewButton);
+
+  card.append(
+    header,
+    body,
+    actions
+  );
+
+  return card;
+}
+
+function appendZoneMetric(
+  container,
+  label,
+  value
+) {
+  const metric =
+    document.createElement("div");
+
+  metric.className =
+    "zone-card__metric";
+
+  const labelElement =
+    document.createElement("span");
+
+  labelElement.textContent = label;
+
+  const valueElement =
+    document.createElement("strong");
+
+  valueElement.textContent =
+    String(value);
+
+  metric.append(
+    labelElement,
+    valueElement
+  );
+
+  container.append(metric);
+}
+
+function handleZoneExplorerChange() {
+  state.zoneSearch =
+    elements.zoneSearchInput.value;
+
+  state.zoneSort =
+    elements.zoneSortSelect.value;
+
+  renderZoneSummary();
+}
+
+function handleZoneCardClick(event) {
+  const button = event.target.closest(
+    "button[data-zone-name]"
+  );
+
+  if (!button) {
+    return;
   }
 
-  if (summaries.length === 0) {
-    const row =
-      document.createElement("tr");
+  const zoneName =
+    button.dataset.zoneName;
 
-    const cell =
-      document.createElement("td");
-
-    cell.colSpan = 4;
-
-    cell.textContent =
-      "No zones match the active filters.";
-
-    row.append(cell);
-    elements.zoneSummaryBody.append(row);
+  if (!hasValue(zoneName)) {
+    return;
   }
+
+  elements.zone.value =
+    zoneName;
+
+  applyCurrentFilters();
+  setActiveView("browse");
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
 }
 
 function handleResultClick(event) {
