@@ -1,1258 +1,843 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <meta
-    name="description"
-    content="Search, compare, and plan equipment builds from researched EverQuest Legends loot records."
-  >
-
-  <title>EverQuest Legends Loot Explorer</title>
-
-  <link
-    rel="stylesheet"
-    href="./css/app.css"
-  >
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="Search, compare, and plan equipment builds from researched EverQuest Legends loot records." name="description"/>
+<title>EverQuest Legends Loot Explorer</title>
+<link href="./css/app.css" rel="stylesheet"/>
 </head>
-
 <body>
-  <header class="site-header">
-    <div>
-      <p class="eyebrow">
+<header class="site-header">
+<div>
+<p class="eyebrow">
         EQL Research Database
       </p>
-
-      <h1>
+<h1>
         EverQuest Legends Loot Explorer
       </h1>
-
-      <p class="subtitle">
+<p class="subtitle">
         Search EQL-first loot records, compare researched
         items, and assemble an equipment loadout with the
         official EQL Any slots.
       </p>
-    </div>
-
-    <p
-      id="status"
-      class="status"
-      aria-live="polite"
-    >
+</div>
+<p aria-live="polite" class="status" id="status">
       Loading database…
     </p>
-  </header>
-
-  <main>
-    <section
-      class="summary-grid"
-      aria-label="Database summary"
-    >
-      <article class="summary-card">
-        <span>CSV files</span>
-        <strong id="file-count">0</strong>
-      </article>
-
-      <article class="summary-card">
-        <span>Database records</span>
-        <strong id="record-count">0</strong>
-      </article>
-
-      <article class="summary-card">
-        <span>Matching records</span>
-        <strong id="match-count">0</strong>
-      </article>
-
-      <article class="summary-card">
-        <span>Matching zones</span>
-        <strong id="zone-count">0</strong>
-      </article>
-    </section>
-
-    <section class="panel">
-      <div class="panel-header">
-        <div>
-          <p class="eyebrow">
+</header><nav aria-label="Primary application views" class="primary-navigation"><button aria-controls="browse-view" aria-selected="true" class="primary-navigation__button is-active" data-app-view="browse" type="button">Browse Loot</button><button aria-controls="planner-view" aria-selected="false" class="primary-navigation__button" data-app-view="planner" type="button">Build Planner</button><button aria-controls="zones-view" aria-selected="false" class="primary-navigation__button" data-app-view="zones" type="button">Explore Zones</button><button aria-controls="research-view" aria-selected="false" class="primary-navigation__button" data-app-view="research" type="button">Research &amp; Data</button></nav>
+<main class="application-main"><section aria-label="Browse loot" class="app-view is-active" data-view-panel="browse" id="browse-view"><header class="view-header"><p class="eyebrow">Loot discovery</p><h2>Browse Loot</h2><p class="view-description">Search and filter the default-visible EQL loot database.</p></header><section class="panel">
+<div class="panel-header">
+<div>
+<p class="eyebrow">
             Loot search
           </p>
-
-          <h2>Filters</h2>
-        </div>
-
-        <button
-          id="reset-filters"
-          type="button"
-        >
+<h2>Filters</h2>
+</div>
+<button id="reset-filters" type="button">
           Reset filters
         </button>
-      </div>
-
-      <div class="filter-grid">
-        <label class="search-control">
+</div>
+<div class="filter-grid">
+<label class="search-control">
           Search loot information
 
-          <input
-            id="search-filter"
-            type="search"
-            placeholder="Item, NPC, effect, zone, stats, notes…"
-          >
-        </label>
-
-        <label>
+          <input id="search-filter" placeholder="Item, NPC, effect, zone, stats, notes…" type="search"/>
+</label>
+<label>
           Continent
 
           <select id="continent-filter">
-            <option value="">
+<option value="">
               All continents
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           Zone
 
           <select id="zone-filter">
-            <option value="">
+<option value="">
               All zones
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           Source NPC
 
           <select id="source-npc-filter">
-            <option value="">
+<option value="">
               All source NPCs
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           Item category
 
           <select id="category-filter">
-            <option value="">
+<option value="">
               All categories
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           Equipment slot
 
           <select id="slot-filter">
-            <option value="">
+<option value="">
               All slots
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           EQL class
 
           <select id="class-filter">
-            <option value="">
+<option value="">
               All classes
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           EQL race
 
           <select id="race-filter">
-            <option value="">
+<option value="">
               All races
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           Minimum source NPC level
 
-          <input
-            id="minimum-level-filter"
-            type="number"
-            min="0"
-            inputmode="numeric"
-            placeholder="Any"
-          >
-        </label>
-
-        <label>
+          <input id="minimum-level-filter" inputmode="numeric" min="0" placeholder="Any" type="number"/>
+</label>
+<label>
           Maximum source NPC level
 
-          <input
-            id="maximum-level-filter"
-            type="number"
-            min="0"
-            inputmode="numeric"
-            placeholder="Any"
-          >
-        </label>
-
-        <p
-          id="npc-level-hint"
-          class="filter-hint level-range-hint"
-          aria-live="polite"
-        >
+          <input id="maximum-level-filter" inputmode="numeric" min="0" placeholder="Any" type="number"/>
+</label>
+<p aria-live="polite" class="filter-hint level-range-hint" id="npc-level-hint">
           Available source NPC levels will appear after loading.
         </p>
-
-        <label>
+<label>
           Magic
 
           <select id="magic-filter">
-            <option value="">Any</option>
-            <option value="yes">
+<option value="">Any</option>
+<option value="yes">
               Magic only
             </option>
-            <option value="no">
+<option value="no">
               Not magic
             </option>
-            <option value="unknown">
+<option value="unknown">
               Unknown
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           Lore
 
           <select id="lore-filter">
-            <option value="">Any</option>
-            <option value="yes">
+<option value="">Any</option>
+<option value="yes">
               Lore only
             </option>
-            <option value="no">
+<option value="no">
               Not lore
             </option>
-            <option value="unknown">
+<option value="unknown">
               Unknown
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           No Drop
 
           <select id="no-drop-filter">
-            <option value="">Any</option>
-            <option value="yes">
+<option value="">Any</option>
+<option value="yes">
               No Drop only
             </option>
-            <option value="no">
+<option value="no">
               Tradeable only
             </option>
-            <option value="unknown">
+<option value="unknown">
               Unknown
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           Quest item
 
           <select id="quest-item-filter">
-            <option value="">Any</option>
-            <option value="yes">
+<option value="">Any</option>
+<option value="yes">
               Quest items only
             </option>
-            <option value="no">
+<option value="no">
               Non-quest items
             </option>
-            <option value="unknown">
+<option value="unknown">
               Unknown
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           Inventory only
 
           <select id="inventory-only-filter">
-            <option value="">Any</option>
-            <option value="yes">
+<option value="">Any</option>
+<option value="yes">
               Inventory only
             </option>
-            <option value="no">
+<option value="no">
               Equippable/non-inventory
             </option>
-            <option value="unknown">
+<option value="unknown">
               Unknown
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           Proc, click, or focus present
 
           <select id="effect-present-filter">
-            <option value="">Any</option>
-            <option value="yes">
+<option value="">Any</option>
+<option value="yes">
               Effect present
             </option>
-            <option value="no">
+<option value="no">
               No effect listed
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           Effect type
 
           <select id="effect-type-filter">
-            <option value="">
+<option value="">
               All effect types
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           Focus-effect family
 
           <select id="focus-effect-filter">
-            <option value="">
+<option value="">
               All focus effects
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           Effect-transfer value
 
           <select id="effect-transfer-filter">
-            <option value="">
+<option value="">
               All values
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           EQL verification
 
           <select id="verification-filter">
-            <option value="">
+<option value="">
               All statuses
             </option>
-
-            <option value="__confirmed_only__">
+<option value="__confirmed_only__">
               EQL Confirmed only
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           Audit action
 
           <select id="audit-action-filter">
-            <option value="">
+<option value="">
               All audit actions
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           Confidence
 
           <select id="confidence-filter">
-            <option value="">
+<option value="">
               All confidence levels
             </option>
-          </select>
-        </label>
-
-        <label>
+</select>
+</label>
+<label>
           Target priority
 
           <select id="target-priority-filter">
-            <option value="">
+<option value="">
               All priorities
             </option>
-          </select>
-        </label>
-
-        <label class="checkbox-control">
-          <input
-            id="approved-filter"
-            type="checkbox"
-          >
-
-          <span>
+</select>
+</label>
+<label class="checkbox-control">
+<input id="approved-filter" type="checkbox"/>
+<span>
             Approved records only
           </span>
-        </label>
-      </div>
-
-      <fieldset class="stat-filter-panel">
-        <legend>
+</label>
+</div>
+<fieldset class="stat-filter-panel">
+<legend>
           Required item stats
         </legend>
-
-        <div class="stat-filter-heading">
-          <p>
+<div class="stat-filter-heading">
+<p>
             Select one or more stats. Require all selected
             stats or accept items containing any selected stat.
           </p>
-
-          <div class="stat-mode-control">
-            <label>
+<div class="stat-mode-control">
+<label>
               Match mode
 
               <select id="stat-mode-filter">
-                <option value="all">
+<option value="all">
                   All selected stats
                 </option>
-
-                <option value="any">
+<option value="any">
                   Any selected stat
                 </option>
-              </select>
-            </label>
-
-            <button
-              id="clear-stat-filters"
-              type="button"
-            >
+</select>
+</label>
+<button id="clear-stat-filters" type="button">
               Clear stats
             </button>
-          </div>
-        </div>
-
-        <div
-          id="stat-options"
-          class="stat-options"
-          aria-label="Stat filters"
-        >
-          <p class="muted-message">
+</div>
+</div>
+<div aria-label="Stat filters" class="stat-options" id="stat-options">
+<p class="muted-message">
             Stat options will appear after the database loads.
           </p>
-        </div>
-      </fieldset>
-    </section>
-
-    <section
-      id="build-planner-panel"
-      class="panel build-planner-panel"
-    >
-      <div class="panel-header build-planner-header">
-        <div>
-          <p class="eyebrow">
+</div>
+</fieldset>
+</section><section class="panel">
+<div class="panel-header">
+<div>
+<p class="eyebrow">
+            Database results
+          </p>
+<h2>Matching items</h2>
+</div>
+<p class="table-help">
+          Select an item name for details, or equip it directly
+          into the current loadout.
+        </p>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Zone</th>
+<th>Slot</th>
+<th>EQL Stats</th>
+<th>EQL Classes</th>
+<th>Source NPC</th>
+<th>NPC Level</th>
+<th>Effect</th>
+<th>EQL Status</th>
+<th>Confidence</th>
+<th>Loadout</th>
+</tr>
+</thead>
+<tbody id="results-body"></tbody>
+</table>
+</div>
+</section></section><section aria-label="Build planner" class="app-view" data-view-panel="planner" hidden="" id="planner-view"><header class="view-header"><p class="eyebrow">Equipment planning</p><h2>Build Planner</h2><p class="view-description">Assemble and review a saved EQL equipment loadout.</p></header><section class="panel build-planner-panel" id="build-planner-panel">
+<div class="panel-header build-planner-header">
+<div>
+<p class="eyebrow">
             Equipment planning
           </p>
-
-          <h2>
+<h2>
             EQL Build / Loadout Planner
           </h2>
-
-          <p class="planner-introduction">
+<p class="planner-introduction">
             Equip researched items into their normal positions,
             or place any normally equippable item into either
             official EQL Any slot.
           </p>
-        </div>
-
-        <button
-          id="clear-build-button"
-          type="button"
-        >
+</div>
+<button id="clear-build-button" type="button">
           Clear loadout
         </button>
-      </div>
-
-      <div class="build-name-row">
-        <label>
+</div>
+<div class="build-name-row">
+<label>
           Loadout name
 
-          <input
-            id="build-name-input"
-            type="text"
-            maxlength="80"
-            placeholder="My EQL equipment loadout"
-          >
-        </label>
-
-        <p
-          id="build-save-status"
-          class="build-save-status"
-          aria-live="polite"
-        >
+          <input id="build-name-input" maxlength="80" placeholder="My EQL equipment loadout" type="text"/>
+</label>
+<p aria-live="polite" class="build-save-status" id="build-save-status">
           Loadout saves automatically in this browser.
         </p>
-      </div>
-
-      <div class="paper-doll-layout">
-        <div
-          class="paper-doll-grid"
-          aria-label="Equipment loadout slots"
-        >
-          <button
-            class="planner-slot"
-            type="button"
-            data-planner-slot="ear_left"
-          >
-            <span class="planner-slot-label">
+</div>
+<div class="paper-doll-layout">
+<div aria-label="Equipment loadout slots" class="paper-doll-grid">
+<button class="planner-slot" data-planner-slot="ear_left" type="button">
+<span class="planner-slot-label">
               Left Ear
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot"
-            type="button"
-            data-planner-slot="neck"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot" data-planner-slot="neck" type="button">
+<span class="planner-slot-label">
               Neck
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot"
-            type="button"
-            data-planner-slot="face"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot" data-planner-slot="face" type="button">
+<span class="planner-slot-label">
               Face
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot"
-            type="button"
-            data-planner-slot="head"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot" data-planner-slot="head" type="button">
+<span class="planner-slot-label">
               Head
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot"
-            type="button"
-            data-planner-slot="ear_right"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot" data-planner-slot="ear_right" type="button">
+<span class="planner-slot-label">
               Right Ear
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot"
-            type="button"
-            data-planner-slot="finger_left"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot" data-planner-slot="finger_left" type="button">
+<span class="planner-slot-label">
               Left Finger
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot"
-            type="button"
-            data-planner-slot="wrist_left"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot" data-planner-slot="wrist_left" type="button">
+<span class="planner-slot-label">
               Left Wrist
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot"
-            type="button"
-            data-planner-slot="arms"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot" data-planner-slot="arms" type="button">
+<span class="planner-slot-label">
               Arms
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot"
-            type="button"
-            data-planner-slot="hands"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot" data-planner-slot="hands" type="button">
+<span class="planner-slot-label">
               Hands
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot"
-            type="button"
-            data-planner-slot="wrist_right"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot" data-planner-slot="wrist_right" type="button">
+<span class="planner-slot-label">
               Right Wrist
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot"
-            type="button"
-            data-planner-slot="finger_right"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot" data-planner-slot="finger_right" type="button">
+<span class="planner-slot-label">
               Right Finger
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot"
-            type="button"
-            data-planner-slot="shoulders"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot" data-planner-slot="shoulders" type="button">
+<span class="planner-slot-label">
               Shoulders
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot"
-            type="button"
-            data-planner-slot="chest"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot" data-planner-slot="chest" type="button">
+<span class="planner-slot-label">
               Chest
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot"
-            type="button"
-            data-planner-slot="back"
-            title="Back / About Body"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot" data-planner-slot="back" title="Back / About Body" type="button">
+<span class="planner-slot-label">
               Back
             </span>
-
-            <span class="planner-slot-official-name">
+<span class="planner-slot-official-name">
               About Body
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot"
-            type="button"
-            data-planner-slot="waist"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot" data-planner-slot="waist" type="button">
+<span class="planner-slot-label">
               Waist
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot"
-            type="button"
-            data-planner-slot="legs"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot" data-planner-slot="legs" type="button">
+<span class="planner-slot-label">
               Legs
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot"
-            type="button"
-            data-planner-slot="feet"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot" data-planner-slot="feet" type="button">
+<span class="planner-slot-label">
               Feet
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-        </div>
-
-        <div
-          class="weapon-slot-grid"
-          aria-label="Weapon, utility, and EQL Any slots"
-        >
-          <button
-            class="planner-slot weapon-planner-slot"
-            type="button"
-            data-planner-slot="primary"
-          >
-            <span class="planner-slot-label">
+</button>
+</div>
+<div aria-label="Weapon, utility, and EQL Any slots" class="weapon-slot-grid">
+<button class="planner-slot weapon-planner-slot" data-planner-slot="primary" type="button">
+<span class="planner-slot-label">
               Primary
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot weapon-planner-slot"
-            type="button"
-            data-planner-slot="secondary"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot weapon-planner-slot" data-planner-slot="secondary" type="button">
+<span class="planner-slot-label">
               Secondary
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot weapon-planner-slot"
-            type="button"
-            data-planner-slot="range"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot weapon-planner-slot" data-planner-slot="range" type="button">
+<span class="planner-slot-label">
               Range
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot weapon-planner-slot"
-            type="button"
-            data-planner-slot="ammo"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot weapon-planner-slot" data-planner-slot="ammo" type="button">
+<span class="planner-slot-label">
               Ammo
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Empty
             </span>
-          </button>
-
-          <button
-            class="planner-slot weapon-planner-slot any-planner-slot"
-            type="button"
-            data-planner-slot="any_1"
-            title="Official EQL equipment position 0"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot weapon-planner-slot any-planner-slot" data-planner-slot="any_1" title="Official EQL equipment position 0" type="button">
+<span class="planner-slot-label">
               Any 1
             </span>
-
-            <span class="planner-slot-official-name">
+<span class="planner-slot-official-name">
               Equip 0
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Any equippable item
             </span>
-          </button>
-
-          <button
-            class="planner-slot weapon-planner-slot any-planner-slot"
-            type="button"
-            data-planner-slot="any_2"
-            title="Official EQL equipment position 21"
-          >
-            <span class="planner-slot-label">
+</button>
+<button class="planner-slot weapon-planner-slot any-planner-slot" data-planner-slot="any_2" title="Official EQL equipment position 21" type="button">
+<span class="planner-slot-label">
               Any 2
             </span>
-
-            <span class="planner-slot-official-name">
+<span class="planner-slot-official-name">
               Equip 21
             </span>
-
-            <span class="planner-slot-item">
+<span class="planner-slot-item">
               Any equippable item
             </span>
-          </button>
-        </div>
-      </div>
-
-      <section
-        class="build-summary"
-        aria-labelledby="build-summary-heading"
-      >
-        <div class="build-summary-header">
-          <div>
-            <p class="eyebrow">
+</button>
+</div>
+</div>
+<section aria-labelledby="build-summary-heading" class="build-summary">
+<div class="build-summary-header">
+<div>
+<p class="eyebrow">
               Calculated loadout
             </p>
-
-            <h3 id="build-summary-heading">
+<h3 id="build-summary-heading">
               Loadout Summary
             </h3>
-          </div>
-
-          <strong id="build-equipped-count">
+</div>
+<strong id="build-equipped-count">
             0 / 23 slots equipped
           </strong>
-        </div>
-
-        <div class="build-summary-grid">
-          <article class="build-summary-card">
-            <h4>Item stats</h4>
-
-            <div id="build-stat-summary">
-              <p class="muted-message">
+</div>
+<div class="build-summary-grid">
+<article class="build-summary-card">
+<h4>Item stats</h4>
+<div id="build-stat-summary">
+<p class="muted-message">
                 Equip items to begin building a stat summary.
               </p>
-            </div>
-          </article>
-
-          <article class="build-summary-card">
-            <h4>Effects</h4>
-
-            <div id="build-effect-summary">
-              <p class="muted-message">
+</div>
+</article>
+<article class="build-summary-card">
+<h4>Effects</h4>
+<div id="build-effect-summary">
+<p class="muted-message">
                 No focus, proc, or click effects equipped.
               </p>
-            </div>
-          </article>
-
-          <article class="build-summary-card">
-            <h4>Weapons</h4>
-
-            <div id="build-weapon-summary">
-              <p class="muted-message">
+</div>
+</article>
+<article class="build-summary-card">
+<h4>Weapons</h4>
+<div id="build-weapon-summary">
+<p class="muted-message">
                 No weapons equipped.
               </p>
-            </div>
-          </article>
-
-          <article class="build-summary-card">
-            <h4>Research status</h4>
-
-            <div id="build-verification-summary">
-              <p class="muted-message">
+</div>
+</article>
+<article class="build-summary-card">
+<h4>Research status</h4>
+<div id="build-verification-summary">
+<p class="muted-message">
                 No equipped records to evaluate.
               </p>
-            </div>
-          </article>
-        </div>
-      </section>
-    </section>
-
-    <section class="panel">
-      <div class="panel-header">
-        <div>
-          <p class="eyebrow">
+</div>
+</article>
+</div>
+</section>
+</section></section><section aria-label="Explore zones" class="app-view" data-view-panel="zones" hidden="" id="zones-view"><header class="view-header"><p class="eyebrow">Zone planning</p><h2>Explore Zones</h2><p class="view-description">Compare matching loot across zones using the active Browse filters.</p></header><section class="panel">
+<div class="panel-header">
+<div>
+<p class="eyebrow">
             Zone planning
           </p>
-
-          <h2>Matching zones</h2>
-        </div>
-      </div>
-
-      <div class="table-wrapper zone-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Zone</th>
-              <th>Matching items</th>
-              <th>Slots represented</th>
-              <th>EQL-confirmed</th>
-            </tr>
-          </thead>
-
-          <tbody id="zone-summary-body"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="panel">
-      <div class="panel-header">
-        <div>
-          <p class="eyebrow">
-            Database results
-          </p>
-
-          <h2>Matching items</h2>
-        </div>
-
-        <p class="table-help">
-          Select an item name for details, or equip it directly
-          into the current loadout.
-        </p>
-      </div>
-
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Zone</th>
-              <th>Slot</th>
-              <th>EQL Stats</th>
-              <th>EQL Classes</th>
-              <th>Source NPC</th>
-              <th>NPC Level</th>
-              <th>Effect</th>
-              <th>EQL Status</th>
-              <th>Confidence</th>
-              <th>Loadout</th>
-            </tr>
-          </thead>
-
-          <tbody id="results-body"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="panel">
-      <details>
-        <summary>
+<h2>Matching zones</h2>
+</div>
+</div>
+<div class="table-wrapper zone-table">
+<table>
+<thead>
+<tr>
+<th>Zone</th>
+<th>Matching items</th>
+<th>Slots represented</th>
+<th>EQL-confirmed</th>
+</tr>
+</thead>
+<tbody id="zone-summary-body"></tbody>
+</table>
+</div>
+</section></section><section aria-label="Research and data status" class="app-view" data-view-panel="research" hidden="" id="research-view"><header class="view-header"><p class="eyebrow">Research workspace</p><h2>Research &amp; Data</h2><p class="view-description">Review database status, schema information, and diagnostics.</p></header><section aria-label="Database summary" class="summary-grid">
+<article class="summary-card">
+<span>CSV files</span>
+<strong id="file-count">0</strong>
+</article>
+<article class="summary-card">
+<span>Database records</span>
+<strong id="record-count">0</strong>
+</article>
+<article class="summary-card">
+<span>Matching records</span>
+<strong id="match-count">0</strong>
+</article>
+<article class="summary-card">
+<span>Matching zones</span>
+<strong id="zone-count">0</strong>
+</article>
+</section><section class="panel">
+<details>
+<summary>
           Database diagnostics
         </summary>
-
-        <div id="diagnostics">
-          <p>
+<div id="diagnostics">
+<p>
             Diagnostics will appear after loading.
           </p>
-        </div>
-      </details>
-    </section>
-  </main>
-
-  <footer>
+</div>
+</details>
+</section></section></main>
+<footer>
     EverQuest Legends community loot research tool
   </footer>
-
-  <dialog
-    id="item-dialog"
-    class="item-dialog"
-    aria-labelledby="detail-item-name"
-  >
-    <div class="dialog-shell">
-      <header class="dialog-header">
-        <div>
-          <p class="eyebrow">
+<dialog aria-labelledby="detail-item-name" class="item-dialog" id="item-dialog">
+<div class="dialog-shell">
+<header class="dialog-header">
+<div>
+<p class="eyebrow">
             Loot record
           </p>
-
-          <h2 id="detail-item-name">
+<h2 id="detail-item-name">
             Item details
           </h2>
-
-          <p
-            id="detail-item-subtitle"
-            class="detail-subtitle"
-          ></p>
-        </div>
-
-        <button
-          id="close-item-dialog"
-          class="dialog-close-button"
-          type="button"
-          aria-label="Close item details"
-        >
+<p class="detail-subtitle" id="detail-item-subtitle"></p>
+</div>
+<button aria-label="Close item details" class="dialog-close-button" id="close-item-dialog" type="button">
           Close
         </button>
-      </header>
-
-      <div
-        id="item-dialog-actions"
-        class="item-dialog-actions"
-      >
-        <button
-          id="equip-detail-item-button"
-          type="button"
-        >
+</header>
+<div class="item-dialog-actions" id="item-dialog-actions">
+<button id="equip-detail-item-button" type="button">
           Equip to Loadout
         </button>
-      </div>
-
-      <div
-        id="item-detail-content"
-        class="item-detail-content"
-      ></div>
-    </div>
-  </dialog>
-
-  <dialog
-    id="equip-slot-dialog"
-    class="item-dialog planner-dialog"
-    aria-labelledby="equip-slot-dialog-title"
-  >
-    <div class="dialog-shell">
-      <header class="dialog-header">
-        <div>
-          <p class="eyebrow">
+</div>
+<div class="item-detail-content" id="item-detail-content"></div>
+</div>
+</dialog>
+<dialog aria-labelledby="equip-slot-dialog-title" class="item-dialog planner-dialog" id="equip-slot-dialog">
+<div class="dialog-shell">
+<header class="dialog-header">
+<div>
+<p class="eyebrow">
             Loadout planner
           </p>
-
-          <h2 id="equip-slot-dialog-title">
+<h2 id="equip-slot-dialog-title">
             Equip item
           </h2>
-
-          <p
-            id="equip-slot-dialog-subtitle"
-            class="detail-subtitle"
-          >
+<p class="detail-subtitle" id="equip-slot-dialog-subtitle">
             Choose an equipment destination.
           </p>
-        </div>
-
-        <button
-          id="close-equip-slot-dialog"
-          class="dialog-close-button"
-          type="button"
-        >
+</div>
+<button class="dialog-close-button" id="close-equip-slot-dialog" type="button">
           Cancel
         </button>
-      </header>
-
-      <div class="item-detail-content">
-        <section class="equip-choice-section">
-          <h3>
+</header>
+<div class="item-detail-content">
+<section class="equip-choice-section">
+<h3>
             Normal equipment slots
           </h3>
-
-          <div
-            id="normal-slot-choices"
-            class="slot-choice-grid"
-          >
-            <p class="muted-message">
+<div class="slot-choice-grid" id="normal-slot-choices">
+<p class="muted-message">
               Normal slot choices will appear here.
             </p>
-          </div>
-        </section>
-
-        <section class="equip-choice-section">
-          <h3>
+</div>
+</section>
+<section class="equip-choice-section">
+<h3>
             EQL Any slots
           </h3>
-
-          <p class="equip-choice-help">
+<p class="equip-choice-help">
             Any normally equippable item may be placed in either
             EQL Any slot for its full stats and effects.
           </p>
-
-          <div
-            id="any-slot-choices"
-            class="slot-choice-grid"
-          >
-            <p class="muted-message">
+<div class="slot-choice-grid" id="any-slot-choices">
+<p class="muted-message">
               Any-slot choices will appear here.
             </p>
-          </div>
-        </section>
-      </div>
-    </div>
-  </dialog>
-
-  <dialog
-    id="replace-item-dialog"
-    class="item-dialog confirmation-dialog"
-    aria-labelledby="replace-item-dialog-title"
-  >
-    <div class="dialog-shell">
-      <header class="dialog-header">
-        <div>
-          <p class="eyebrow">
+</div>
+</section>
+</div>
+</div>
+</dialog>
+<dialog aria-labelledby="replace-item-dialog-title" class="item-dialog confirmation-dialog" id="replace-item-dialog">
+<div class="dialog-shell">
+<header class="dialog-header">
+<div>
+<p class="eyebrow">
             Confirm replacement
           </p>
-
-          <h2 id="replace-item-dialog-title">
+<h2 id="replace-item-dialog-title">
             Replace equipped item?
           </h2>
-        </div>
-      </header>
-
-      <div class="item-detail-content">
-        <p id="replace-item-message">
+</div>
+</header>
+<div class="item-detail-content">
+<p id="replace-item-message">
           This slot already contains an item.
         </p>
-
-        <div class="dialog-button-row">
-          <button
-            id="confirm-replace-item"
-            type="button"
-          >
+<div class="dialog-button-row">
+<button id="confirm-replace-item" type="button">
             Replace item
           </button>
-
-          <button
-            id="cancel-replace-item"
-            type="button"
-          >
+<button id="cancel-replace-item" type="button">
             Cancel
           </button>
-        </div>
-      </div>
-    </div>
-  </dialog>
-
-  <dialog
-    id="equipped-slot-dialog"
-    class="item-dialog planner-dialog"
-    aria-labelledby="equipped-slot-dialog-title"
-  >
-    <div class="dialog-shell">
-      <header class="dialog-header">
-        <div>
-          <p class="eyebrow">
+</div>
+</div>
+</div>
+</dialog>
+<dialog aria-labelledby="equipped-slot-dialog-title" class="item-dialog planner-dialog" id="equipped-slot-dialog">
+<div class="dialog-shell">
+<header class="dialog-header">
+<div>
+<p class="eyebrow">
             Equipped item
           </p>
-
-          <h2 id="equipped-slot-dialog-title">
+<h2 id="equipped-slot-dialog-title">
             Equipment slot
           </h2>
-
-          <p
-            id="equipped-slot-dialog-subtitle"
-            class="detail-subtitle"
-          ></p>
-        </div>
-
-        <button
-          id="close-equipped-slot-dialog"
-          class="dialog-close-button"
-          type="button"
-        >
+<p class="detail-subtitle" id="equipped-slot-dialog-subtitle"></p>
+</div>
+<button class="dialog-close-button" id="close-equipped-slot-dialog" type="button">
           Close
         </button>
-      </header>
-
-      <div class="item-detail-content">
-        <div
-          id="equipped-slot-item-content"
-          class="equipped-slot-item-content"
-        ></div>
-
-        <div class="dialog-button-row">
-          <button
-            id="view-equipped-item-button"
-            type="button"
-          >
+</header>
+<div class="item-detail-content">
+<div class="equipped-slot-item-content" id="equipped-slot-item-content"></div>
+<div class="dialog-button-row">
+<button id="view-equipped-item-button" type="button">
             View item details
           </button>
-
-          <button
-            id="remove-equipped-item-button"
-            type="button"
-          >
+<button id="remove-equipped-item-button" type="button">
             Remove from loadout
           </button>
-        </div>
-      </div>
-    </div>
-  </dialog>
-
-  <dialog
-    id="clear-build-dialog"
-    class="item-dialog confirmation-dialog"
-    aria-labelledby="clear-build-dialog-title"
-  >
-    <div class="dialog-shell">
-      <header class="dialog-header">
-        <div>
-          <p class="eyebrow">
+</div>
+</div>
+</div>
+</dialog>
+<dialog aria-labelledby="clear-build-dialog-title" class="item-dialog confirmation-dialog" id="clear-build-dialog">
+<div class="dialog-shell">
+<header class="dialog-header">
+<div>
+<p class="eyebrow">
             Loadout planner
           </p>
-
-          <h2 id="clear-build-dialog-title">
+<h2 id="clear-build-dialog-title">
             Clear the entire loadout?
           </h2>
-        </div>
-      </header>
-
-      <div class="item-detail-content">
-        <p>
+</div>
+</header>
+<div class="item-detail-content">
+<p>
           This removes every equipped item from the current
           browser loadout. Your loot database and CSV files
           will not be changed.
         </p>
-
-        <div class="dialog-button-row">
-          <button
-            id="confirm-clear-build"
-            type="button"
-          >
+<div class="dialog-button-row">
+<button id="confirm-clear-build" type="button">
             Clear loadout
           </button>
-
-          <button
-            id="cancel-clear-build"
-            type="button"
-          >
+<button id="cancel-clear-build" type="button">
             Cancel
           </button>
-        </div>
-      </div>
-    </div>
-  </dialog>
-
-  <script
-    type="module"
-    src="./js/app.js"
-  ></script>
+</div>
+</div>
+</div>
+</dialog>
+<script src="./js/app.js" type="module"></script>
 </body>
 </html>
