@@ -1788,3 +1788,140 @@ footer {
     padding: 0.6rem;
   }
 }
+
+/*
+ * Phase 1 UI navigation
+ *
+ * Separates browsing, planning, zone exploration, and research into
+ * distinct application views without changing any underlying data logic.
+ */
+
+.primary-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+
+  width:
+    min(
+      1700px,
+      calc(100% - 2rem)
+    );
+
+  margin: 0 auto 1.25rem;
+  padding: 0.45rem;
+
+  border:
+    1px solid var(--border);
+
+  border-radius: 0.75rem;
+  background: rgb(24 29 22 / 92%);
+  box-shadow: var(--shadow);
+}
+
+.primary-navigation__button {
+  flex: 0 1 auto;
+  min-height: 2.65rem;
+  border-color: transparent;
+  border-radius: 0.55rem;
+  padding: 0.62rem 1rem;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.primary-navigation__button:hover:not(:disabled),
+.primary-navigation__button:focus-visible {
+  border-color: var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.primary-navigation__button.is-active {
+  border-color: var(--accent-dark);
+  background:
+    linear-gradient(
+      180deg,
+      rgb(201 168 91 / 18%),
+      rgb(201 168 91 / 8%)
+    );
+  color: var(--accent-light);
+}
+
+.application-main {
+  min-width: 0;
+}
+
+.app-view {
+  min-width: 0;
+}
+
+.app-view[hidden] {
+  display: none !important;
+}
+
+.view-header {
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding: 0.35rem 0 0.9rem;
+}
+
+.view-header h2 {
+  color: var(--accent-light);
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+  font-size:
+    clamp(1.55rem, 2.5vw, 2.15rem);
+}
+
+.view-description {
+  max-width: 58rem;
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.site-header {
+  padding-block: 1.6rem 1rem;
+}
+
+.site-header h1 {
+  font-size:
+    clamp(
+      2rem,
+      3.6vw,
+      3.15rem
+    );
+}
+
+.app-view > .panel:last-child,
+.app-view > .summary-grid:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 720px) {
+  .primary-navigation {
+    display: grid;
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .primary-navigation__button {
+    width: 100%;
+  }
+
+  .view-header {
+    padding-inline: 0.15rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .primary-navigation {
+    grid-template-columns: 1fr;
+  }
+}
+
