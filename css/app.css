@@ -2593,3 +2593,432 @@ footer {
     width: 100%;
   }
 }
+
+
+/*
+ * Phase 5 — XML-inspired equipment-doll planner workspace
+ */
+
+.primary-navigation__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.primary-navigation__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.8rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 0.16rem 0.42rem;
+  background: rgb(255 255 255 / 5%);
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.primary-navigation__button.is-active
+.primary-navigation__count {
+  border-color: rgb(15 18 13 / 32%);
+  background: rgb(15 18 13 / 20%);
+  color: inherit;
+}
+
+.planner-view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1rem;
+}
+
+.planner-browse-button {
+  flex: none;
+  border-color: var(--accent-dark);
+  color: var(--accent-light);
+}
+
+.planner-workspace {
+  padding: 1rem;
+}
+
+.planner-workspace__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1rem;
+}
+
+.planner-build-identity {
+  display: grid;
+  grid-template-columns:
+    minmax(16rem, 34rem)
+    minmax(12rem, 1fr);
+  gap: 1rem;
+  align-items: end;
+  min-width: 0;
+  flex: 1;
+}
+
+.planner-build-identity
+.build-save-status {
+  margin: 0 0 0.7rem;
+}
+
+.planner-workspace__status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.planner-equipped-count {
+  color: var(--accent-light);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.planner-workspace__main {
+  display: grid;
+  grid-template-columns:
+    minmax(42rem, 1.45fr)
+    minmax(20rem, 0.75fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.equipment-doll-panel,
+.planner-summary-panel,
+.planner-slot-group {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  background: rgb(13 17 12 / 68%);
+}
+
+.equipment-doll-panel,
+.planner-slot-group {
+  padding: 1rem;
+}
+
+.planner-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.planner-section-heading h3 {
+  margin: 0;
+}
+
+.planner-section-heading > p {
+  max-width: 30rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-align: right;
+}
+
+.equipment-doll {
+  position: relative;
+  display: grid;
+  grid-template-columns:
+    repeat(7, minmax(5.7rem, 1fr));
+  grid-template-rows:
+    repeat(8, minmax(4.9rem, auto));
+  grid-template-areas:
+    ". earleft head head head earright ."
+    ". face head head head neck ."
+    "shoulders shoulders . . . back back"
+    "wristleft arms chest chest chest hands wristright"
+    "fingerleft arms chest chest chest hands fingerright"
+    ". . waist waist waist . ."
+    ". . legs legs legs . ."
+    ". . feet feet feet . .";
+  gap: 0.65rem;
+  min-height: 47rem;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  padding: 1rem;
+  background:
+    radial-gradient(
+      circle at 50% 32%,
+      rgb(201 168 91 / 9%),
+      transparent 27rem
+    ),
+    linear-gradient(
+      180deg,
+      rgb(34 41 31 / 78%),
+      rgb(13 17 12 / 94%)
+    );
+  overflow: hidden;
+}
+
+.equipment-doll__silhouette {
+  position: absolute;
+  inset: 3.5rem 28% 3.5rem;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.24;
+}
+
+.equipment-doll__head,
+.equipment-doll__body,
+.equipment-doll__arm,
+.equipment-doll__leg {
+  position: absolute;
+  display: block;
+  border: 1px solid var(--accent-dark);
+  background: rgb(201 168 91 / 8%);
+}
+
+.equipment-doll__head {
+  top: 0;
+  left: 50%;
+  width: 5.4rem;
+  height: 5.4rem;
+  border-radius: 50%;
+  transform: translateX(-50%);
+}
+
+.equipment-doll__body {
+  top: 5.9rem;
+  left: 50%;
+  width: 8.6rem;
+  height: 18rem;
+  border-radius: 46% 46% 24% 24%;
+  transform: translateX(-50%);
+}
+
+.equipment-doll__arm {
+  top: 7.6rem;
+  width: 3rem;
+  height: 17rem;
+  border-radius: 999px;
+}
+
+.equipment-doll__arm--left {
+  left: calc(50% - 7rem);
+  transform: rotate(9deg);
+}
+
+.equipment-doll__arm--right {
+  right: calc(50% - 7rem);
+  transform: rotate(-9deg);
+}
+
+.equipment-doll__leg {
+  top: 22.3rem;
+  width: 3.7rem;
+  height: 18rem;
+  border-radius: 40% 40% 999px 999px;
+}
+
+.equipment-doll__leg--left {
+  left: calc(50% - 4.1rem);
+  transform: rotate(2deg);
+}
+
+.equipment-doll__leg--right {
+  right: calc(50% - 4.1rem);
+  transform: rotate(-2deg);
+}
+
+.doll-slot {
+  position: relative;
+  z-index: 1;
+  min-height: 4.9rem;
+  padding: 0.6rem;
+}
+
+.doll-slot--head { grid-area: head; }
+.doll-slot--ear-left { grid-area: earleft; }
+.doll-slot--ear-right { grid-area: earright; }
+.doll-slot--face { grid-area: face; }
+.doll-slot--neck { grid-area: neck; }
+.doll-slot--shoulders { grid-area: shoulders; }
+.doll-slot--back { grid-area: back; }
+.doll-slot--arms { grid-area: arms; }
+.doll-slot--chest { grid-area: chest; }
+.doll-slot--hands { grid-area: hands; }
+.doll-slot--wrist-left { grid-area: wristleft; }
+.doll-slot--wrist-right { grid-area: wristright; }
+.doll-slot--finger-left { grid-area: fingerleft; }
+.doll-slot--finger-right { grid-area: fingerright; }
+.doll-slot--waist { grid-area: waist; }
+.doll-slot--legs { grid-area: legs; }
+.doll-slot--feet { grid-area: feet; }
+
+.planner-summary-panel {
+  position: sticky;
+  top: 1rem;
+  margin: 0;
+  padding: 1rem;
+  background: rgb(13 17 12 / 82%);
+}
+
+.planner-summary-panel
+.build-summary-grid {
+  grid-template-columns: 1fr;
+}
+
+.planner-summary-panel
+.build-summary-header {
+  margin-bottom: 0.9rem;
+}
+
+.planner-lower-slots {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.35fr)
+    minmax(18rem, 0.65fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.planner-slot-group
+.weapon-slot-grid {
+  grid-template-columns:
+    repeat(4, minmax(8.5rem, 1fr));
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+
+.any-slot-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(8.5rem, 1fr));
+  gap: 0.7rem;
+}
+
+@media (max-width: 1220px) {
+  .planner-workspace__main {
+    grid-template-columns: 1fr;
+  }
+
+  .planner-summary-panel {
+    position: static;
+  }
+
+  .planner-summary-panel
+  .build-summary-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .equipment-doll {
+    grid-template-columns:
+      repeat(5, minmax(5.4rem, 1fr));
+    grid-template-rows:
+      repeat(8, minmax(4.8rem, auto));
+    grid-template-areas:
+      "earleft head head head earright"
+      "face head head head neck"
+      "shoulders shoulders . back back"
+      "wristleft arms chest hands wristright"
+      "fingerleft arms chest hands fingerright"
+      ". . waist . ."
+      ". . legs . ."
+      ". . feet . .";
+    min-height: 48rem;
+  }
+
+  .equipment-doll__silhouette {
+    inset-inline: 24%;
+  }
+
+  .planner-lower-slots {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .planner-view-header,
+  .planner-workspace__header,
+  .planner-section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .planner-build-identity {
+    grid-template-columns: 1fr;
+  }
+
+  .planner-workspace__status {
+    justify-content: space-between;
+  }
+
+  .planner-section-heading > p {
+    text-align: left;
+  }
+
+  .equipment-doll {
+    display: grid;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    grid-template-areas: none;
+    grid-template-rows: none;
+    min-height: 0;
+  }
+
+  .equipment-doll__silhouette {
+    display: none;
+  }
+
+  .doll-slot {
+    grid-area: auto;
+  }
+
+  .doll-slot--head,
+  .doll-slot--chest,
+  .doll-slot--waist,
+  .doll-slot--legs,
+  .doll-slot--feet {
+    grid-column: 1 / -1;
+  }
+
+  .planner-summary-panel
+  .build-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .planner-slot-group
+  .weapon-slot-grid,
+  .any-slot-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .equipment-doll,
+  .planner-slot-group
+  .weapon-slot-grid,
+  .any-slot-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .doll-slot--head,
+  .doll-slot--chest,
+  .doll-slot--waist,
+  .doll-slot--legs,
+  .doll-slot--feet {
+    grid-column: auto;
+  }
+
+  .planner-workspace__status {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
