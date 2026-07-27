@@ -68,7 +68,9 @@ const state = {
   pendingReplace: null,
   selectedPlannerSlot: null,
   currentDetailRecord: null,
-  activeView: "browse"
+  activeView: "browse",
+  resultView: "table",
+  resultSort: "zone-item"
 };
 
 const elements = {};
