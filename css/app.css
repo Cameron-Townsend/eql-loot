@@ -3207,3 +3207,61 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+
+
+/*
+ * Phase 6E — combined duplicate-source results
+ */
+
+.results-group-control {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.35rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  padding: 0.45rem 0.65rem;
+  background: rgb(13 17 12 / 45%);
+  color: var(--text);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.results-group-control input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.result-source-count {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.18rem 0.45rem;
+  background: rgb(201 168 91 / 9%);
+  color: var(--accent-light);
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.result-card__badges .result-source-count {
+  margin-top: 0;
+}
+
+.item-source-list {
+  min-width: 13rem;
+  white-space: normal;
+}
+
+@media (max-width: 760px) {
+  .results-group-control {
+    justify-content: space-between;
+    width: 100%;
+  }
+}
