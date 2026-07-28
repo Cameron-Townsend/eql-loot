@@ -56,6 +56,8 @@ import {
 } from "./build-planner.js";
 
 const RESULT_VIEW_STORAGE_KEY = "eql-loot-result-view";
+const RESULT_GROUPING_STORAGE_KEY =
+  "eql-loot-combine-duplicate-sources";
 
 const state = {
   schemaRegistry: null,
@@ -73,6 +75,7 @@ const state = {
   activeView: "browse",
   resultView: "table",
   resultSort: "zone-item",
+  combineDuplicateSources: true,
   zoneSearch: "",
   zoneSort: "name"
 };
@@ -98,9 +101,15 @@ async function initialize() {
         savedResultView;
     }
 
+    state.combineDuplicateSources =
+      loadSavedResultGrouping();
+
     setResultView(
       state.resultView
     );
+
+    elements.resultGroupingToggle.checked =
+      state.combineDuplicateSources;
 
     updateStatus("Loading EQL schema registry…");
 
@@ -281,6 +290,11 @@ function captureElements() {
 
   elements.resultSort =
     document.querySelector("#result-sort");
+
+  elements.resultGroupingToggle =
+    document.querySelector(
+      "#result-grouping-toggle"
+    );
 
   elements.resultViewButtons = [
     ...document.querySelectorAll(
@@ -607,6 +621,11 @@ function bindEvents() {
   elements.resultSort.addEventListener(
     "change",
     handleResultSortChange
+  );
+
+  elements.resultGroupingToggle.addEventListener(
+    "change",
+    handleResultGroupingChange
   );
 
   for (
@@ -1831,6 +1850,46 @@ function handleResultSortChange() {
   renderResults();
 }
 
+function handleResultGroupingChange() {
+  state.combineDuplicateSources =
+    elements.resultGroupingToggle.checked;
+
+  saveResultGrouping(
+    state.combineDuplicateSources
+  );
+
+  renderResults();
+  updateCounts();
+}
+
+function loadSavedResultGrouping() {
+  try {
+    const savedValue =
+      window.localStorage.getItem(
+        RESULT_GROUPING_STORAGE_KEY
+      );
+
+    if (savedValue === null) {
+      return true;
+    }
+
+    return savedValue !== "false";
+  } catch {
+    return true;
+  }
+}
+
+function saveResultGrouping(isEnabled) {
+  try {
+    window.localStorage.setItem(
+      RESULT_GROUPING_STORAGE_KEY,
+      String(isEnabled)
+    );
+  } catch {
+    // Default-on grouping still works when storage is blocked.
+  }
+}
+
 function handleResultViewChange(event) {
   const requestedView =
     event.currentTarget.dataset.resultView;
@@ -2038,25 +2097,175 @@ function renderResults() {
 
 function getDisplayedRecords() {
   const maximumRows = 500;
+  const displayEntries =
+    getDisplayEntries();
 
   return {
     records:
-      state.filteredRecords.slice(
+      displayEntries.slice(
         0,
         maximumRows
       ),
+    totalCount:
+      displayEntries.length,
     maximumRows
   };
+}
+
+function getDisplayEntries() {
+  if (!state.combineDuplicateSources) {
+    return state.filteredRecords.map(
+      record => ({
+        representative: record,
+        records: [record]
+      })
+    );
+  }
+
+  const groupedRecords =
+    new Map();
+
+  for (const record of state.filteredRecords) {
+    const groupingKey =
+      getResultGroupingKey(record);
+
+    if (!groupedRecords.has(groupingKey)) {
+      groupedRecords.set(
+        groupingKey,
+        {
+          representative: record,
+          records: []
+        }
+      );
+    }
+
+    groupedRecords
+      .get(groupingKey)
+      .records
+      .push(record);
+  }
+
+  return [...groupedRecords.values()];
+}
+
+function getResultGroupingKey(record) {
+  const explicitGroup =
+    getField(
+      record,
+      "duplicateItemGroup"
+    );
+
+  if (hasValue(explicitGroup)) {
+    return (
+      "duplicate:" +
+      normalizeGroupingValue(
+        explicitGroup
+      )
+    );
+  }
+
+  const contentGroup =
+    getField(
+      record,
+      "contentGroupId"
+    );
+
+  if (hasValue(contentGroup)) {
+    return (
+      "content:" +
+      normalizeGroupingValue(
+        contentGroup
+      )
+    );
+  }
+
+  return [
+    "fallback",
+    getField(record, "itemName"),
+    getField(record, "slot"),
+    getField(record, "itemCategory"),
+    getItemStatsDisplay(record),
+    getPreferredClasses(record),
+    getPreferredRaces(record),
+    getField(record, "procClickFocus"),
+    getField(record, "effectDescription")
+  ]
+    .map(normalizeGroupingValue)
+    .join("|");
+}
+
+function normalizeGroupingValue(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function getGroupValues(
+  group,
+  getter
+) {
+  return [
+    ...new Set(
+      group.records
+        .map(getter)
+        .filter(hasValue)
+    )
+  ].sort(naturalCompare);
+}
+
+function getGroupZones(group) {
+  return getGroupValues(
+    group,
+    record =>
+      getField(record, "zone")
+  );
+}
+
+function getGroupSourceNpcs(group) {
+  return getGroupValues(
+    group,
+    record =>
+      getField(record, "sourceNpc")
+  );
+}
+
+function getGroupNpcLevelDisplay(group) {
+  const values =
+    getGroupValues(
+      group,
+      getPreferredNpcLevel
+    );
+
+  return values.join(", ");
+}
+
+function formatGroupValueList(values) {
+  if (values.length === 0) {
+    return "";
+  }
+
+  if (values.length <= 4) {
+    return values.join(", ");
+  }
+
+  return (
+    values.slice(0, 4).join(", ") +
+    ` +${values.length - 4} more`
+  );
 }
 
 function renderResultTable() {
   elements.resultsBody.replaceChildren();
 
   const {
-    records: displayedRecords
+    records: displayedGroups
   } = getDisplayedRecords();
 
-  for (const record of displayedRecords) {
+  for (const group of displayedGroups) {
+    const record =
+      group.representative;
+
     const row =
       document.createElement("tr");
 
@@ -2079,11 +2288,27 @@ function renderResultTable() {
 
     itemCell.className = "item-name";
     itemCell.append(itemButton);
+
+    if (group.records.length > 1) {
+      const sourceBadge =
+        document.createElement("span");
+
+      sourceBadge.className =
+        "result-source-count";
+
+      sourceBadge.textContent =
+        `${group.records.length} source records`;
+
+      itemCell.append(sourceBadge);
+    }
+
     row.append(itemCell);
 
     appendCell(
       row,
-      getField(record, "zone")
+      formatGroupValueList(
+        getGroupZones(group)
+      )
     );
 
     appendCell(
@@ -2104,12 +2329,15 @@ function renderResultTable() {
 
     appendCell(
       row,
-      getField(record, "sourceNpc")
+      formatGroupValueList(
+        getGroupSourceNpcs(group)
+      ),
+      "item-source-list"
     );
 
     appendCell(
       row,
-      getPreferredNpcLevel(record)
+      getGroupNpcLevelDisplay(group)
     );
 
     appendCell(
@@ -2135,7 +2363,7 @@ function renderResultTable() {
     elements.resultsBody.append(row);
   }
 
-  if (displayedRecords.length === 0) {
+  if (displayedGroups.length === 0) {
     const row =
       document.createElement("tr");
 
@@ -2156,11 +2384,12 @@ function renderResultCards() {
   elements.resultCardList.replaceChildren();
 
   const {
-    records: displayedRecords,
+    records: displayedGroups,
+    totalCount,
     maximumRows
   } = getDisplayedRecords();
 
-  if (displayedRecords.length === 0) {
+  if (displayedGroups.length === 0) {
     const message =
       document.createElement("p");
 
@@ -2174,14 +2403,14 @@ function renderResultCards() {
     return;
   }
 
-  for (const record of displayedRecords) {
+  for (const group of displayedGroups) {
     elements.resultCardList.append(
-      createResultCard(record)
+      createResultCard(group)
     );
   }
 
   if (
-    state.filteredRecords.length >
+    totalCount >
     maximumRows
   ) {
     const note =
@@ -2192,13 +2421,16 @@ function renderResultCards() {
 
     note.textContent =
       `Showing the first ${maximumRows} of ` +
-      `${state.filteredRecords.length} matching items.`;
+      `${totalCount} matching items.`;
 
     elements.resultCardList.append(note);
   }
 }
 
-function createResultCard(record) {
+function createResultCard(group) {
+  const record =
+    group.representative;
+
   const card =
     document.createElement("article");
 
@@ -2280,6 +2512,19 @@ function createResultCard(record) {
     badges.append(confidenceBadge);
   }
 
+  if (group.records.length > 1) {
+    const sourceCountBadge =
+      document.createElement("span");
+
+    sourceCountBadge.className =
+      "result-source-count";
+
+    sourceCountBadge.textContent =
+      `${group.records.length} sources`;
+
+    badges.append(sourceCountBadge);
+  }
+
   header.append(identity, badges);
 
   const body =
@@ -2306,20 +2551,28 @@ function createResultCard(record) {
 
   appendCardFact(
     facts,
-    "Zone",
-    getField(record, "zone")
+    getGroupZones(group).length > 1
+      ? "Zones"
+      : "Zone",
+    formatGroupValueList(
+      getGroupZones(group)
+    )
   );
 
   appendCardFact(
     facts,
-    "Source NPC",
-    getField(record, "sourceNpc")
+    getGroupSourceNpcs(group).length > 1
+      ? "Source NPCs"
+      : "Source NPC",
+    formatGroupValueList(
+      getGroupSourceNpcs(group)
+    )
   );
 
   appendCardFact(
     facts,
     "NPC level",
-    getPreferredNpcLevel(record)
+    getGroupNpcLevelDisplay(group)
   );
 
   appendCardFact(
@@ -4808,7 +5061,7 @@ function updateCounts() {
     state.records.length;
 
   elements.matchCount.textContent =
-    state.filteredRecords.length;
+    getDisplayEntries().length;
 
   elements.zoneCount.textContent =
     new Set(
